@@ -79,11 +79,11 @@ class LazyDict(dict):
 	def __init__(self, *args, **kwargs):
 		dict.__init__(self, *args, **kwargs)
 
-		#for what to optimize
+		#for what to optimize; do NOT pop off this key
 		self['_laziness'] = LazyDict.LAZINESS_QUERY_OPTIMIZED
 
 		#whether or not to update existing data when new data is presented as a 
-		#side-effect of computing extensions
+		#side-effect of computing extensions; do NOT pop off this key
 		self['_overwrite'] = True
 
 	def __getitem__(self, key):
@@ -100,7 +100,7 @@ class LazyDict(dict):
 		try:
 			return dict.__getitem__(self, key)
 		except KeyError:
-			if self['_laziness'] == LazyDict.LAZINESS_LOCKED:
+			if dict.__getitem__(self,'_laziness') == LazyDict.LAZINESS_LOCKED:
 				raise
 			else:
 				fulfilled = False
@@ -112,8 +112,8 @@ class LazyDict(dict):
 								if k == key:
 									self[k] = v
 									fulfilled = True
-								elif self['_laziness'] == LazyDict.LAZINESS_QUERY_OPTIMIZED:
-									if self['_overwrite']:
+								elif dict.__getitem__(self,'_laziness') == LazyDict.LAZINESS_QUERY_OPTIMIZED:
+									if dict.__getitem__(self,'_overwrite'):
 										self[k] = v
 									else:
 										if not dict.has_key(self, k):
