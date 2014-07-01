@@ -120,6 +120,7 @@ class LazyDict(dict):
 											self[k] = v
 								else:
 									if fulfilled: break
+						if fulfilled: break
 				return dict.__getitem__(self, key)  #may still raise KeyError
 
 	def set_laziness(self, laziness):
