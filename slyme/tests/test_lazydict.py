@@ -27,6 +27,17 @@ class x_math(lazydict.Extension):
 	def __call__(cls, x, y):
 		return x+y, x-y
 
+class x_indirect1of2(lazydict.Extension):
+	source= ('a',)
+	target = ('b',)
+	def __call__(cls, a):
+		return a+1,
+class x_indirect2of2(lazydict.Extension):
+	source= ('b',)
+	target = ('c',)
+	def __call__(cls, b):
+		return b+1,
+
 class x_identity(lazydict.Extension):
 	"""A simple identity/rename extension.
 	
@@ -59,6 +70,9 @@ class ExampleLazyDict(lazydict.LazyDict):
 		'y',
 		#an int
 
+		'a',
+		#a number
+
 
 		#--- derived
 
@@ -73,14 +87,20 @@ class ExampleLazyDict(lazydict.LazyDict):
 
 		'name_copy',
 		#just a copy of the name
-	]
 
-	primary_key = 'name'
+		'b',
+		#a+1
+
+		'c',
+		#b+1
+	]
 
 	extensions = [
 		x_age(),
 		x_math(),
 		x_identity(),
+		x_indirect1of2(),
+		x_indirect2of2(),
 	]
 
 
@@ -99,6 +119,8 @@ class LazyDictTestCase(unittest.TestCase):
 		self.in_x = 5
 		self.in_y = 3
 
+		self.in_a = 42
+
 
 		#--- expected outputs
 
@@ -106,6 +128,8 @@ class LazyDictTestCase(unittest.TestCase):
 
 		self.out_sum = 8
 		self.out_diff = 2
+
+		self.out_c = 44
 
 
 	#--- low-level extension calls
@@ -158,6 +182,26 @@ class LazyDictTestCase(unittest.TestCase):
 			"a many-to-many extension resulted in at least one bad value"
 		)
 	
+	def test_getitem_extension_indirect(self):
+		d = ExampleLazyDict(a=self.in_a)
+
+		try:
+			self.assertEqual(d['c'], self.out_c,
+				"an indirect extension resulted in an unexpected value"
+			)
+		except KeyError:
+			raise AssertionError("indirect extension did not work")
+
+	def test_contains_through_extension(self):
+		d = ExampleLazyDict(a=self.in_a)
+
+		self.assertTrue('c' in d)
+
+	def test_has_key_through_extension(self):
+		d = ExampleLazyDict(a=self.in_a)
+
+		self.assertTrue(d.has_key('c'))
+	
 	def test_getitem_not_available_no_source(self):
 		#note no birthdate, therefore not possible to compute age by extension
 		d = ExampleLazyDict(name=self.in_name)
@@ -177,57 +221,6 @@ class LazyDictTestCase(unittest.TestCase):
 			"a simple identity extension did not work as expected"
 		)
 
-
-	##took away this complexity
-	##--- str() etc.
-	#
-	#def test_str_with_pk(self):
-	#	"""With a primary key, str() only reports the primary_key value."""
-	#	class X(lazydict.LazyDict):
-	#		keys = [
-	#			'id',
-	#			'foo',
-	#		]
-	#		primary_key = 'id'
-	#
-	#	x = X()
-	#
-	#	self.assertEqual(
-	#		str(x),
-	#		"<id None>",
-	#	)
-	#
-	#	x['id'] = 42
-	#	self.assertEqual(
-	#		str(x),
-	#		"<id 42>",
-	#	)
-	#
-	#	self.assertEqual(
-	#		repr(x),
-	#		"{'id': 42}",
-	#	)
-	#
-	#def test_str_without_pk(self):
-	#	"""Without a primary key, str dumps the full dict."""
-	#	class X(lazydict.LazyDict):
-	#		keys = [
-	#			'foo',
-	#		]
-	#
-	#	x = X()
-	#	
-	#	self.assertEqual(
-	#		str(x),
-	#		"<{}>",
-	#	)
-	#
-	#	x['foo'] = 42
-	#	self.assertEqual(
-	#		str(x),
-	#		"<{'foo': 42}>",
-	#	)
-	
 
 	#--- performance and laziness
 

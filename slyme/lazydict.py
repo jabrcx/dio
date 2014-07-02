@@ -54,11 +54,6 @@ class LazyDict(dict):
 	Values are never None -- that special value is used internally during the 
 	extension evaluation.  This might change, we'll see what problems we run 
 	into...
-
-	BUGS/TODO
-		Only direct extensions are currently supported.  That is, if you have 
-		the two extensions `a->b' and `b->c', just having an `a' will not allow 
-		`c' to be computed.  The design intention is that this should work.
 	"""
 
 	LAZINESS_LOCKED = 0
@@ -85,16 +80,31 @@ class LazyDict(dict):
 		#whether or not to update existing data when new data is presented as a 
 		#side-effect of computing extensions; do NOT pop off this key
 		self['_overwrite'] = True
+	
+	def has_key(self, key):
+		"""dict's has_key, enhanced with laziness and extension functionality.
+
+		Note: has_key() is deprecated in Python; use the `in' operator, i.e. __contains__(), instead.
+		"""
+		return key in self
+	
+	def __contains__(self, key):
+		"""dict's __contains__, enhanced with laziness and extension functionality."""
+		try:
+			self[key]
+		except KeyError:
+			return False
+		return True
 
 	def __getitem__(self, key):
-		"""__getitem__
-		
+		"""dict's __getitem__, enhanced with laziness and extension functionality.
+
 		This method itself is rather optimized for LAZINESS_QUERY_OPTIMIZED, as 
 		it uses try/except instead of if/hasattr, which assumes success will be 
 		more frequent than failure.
 
-		FIXME: This needs a whole lot of work and should be properly 
-		formalized.  See the BUGS/TODO in the main class doc.
+		Note that this is recursive, and there is no guarantee of termination.  
+		Specifically, if extensions create loops, this may recurse infinitely.
 		"""
 		
 		try:
@@ -105,7 +115,7 @@ class LazyDict(dict):
 			else:
 				fulfilled = False
 				for e in self.extensions:
-					if key in e.target and all([ dict.has_key(self, sk) for sk in e.source ]):
+					if key in e.target and all([ (sk in self) for sk in e.source ]):
 						LazyDict._extension_count += 1
 						for k, v in zip(e.target, e(*[ dict.__getitem__(self, sk) for sk in e.source ])):
 							if v is not None:
@@ -116,7 +126,7 @@ class LazyDict(dict):
 									if dict.__getitem__(self,'_overwrite'):
 										self[k] = v
 									else:
-										if not dict.has_key(self, k):
+										if not dict.__contains__(k):
 											self[k] = v
 								else:
 									if fulfilled: break
