@@ -1,18 +1,70 @@
 # Copyright (c) 2013-2014
+# John A. Brunelle
 # Harvard FAS Research Computing
 # All rights reserved.
 
-"""LazyDict"""
+"""a dict enhanced with on-demand computation and query vs. cache optimization
+
+LazyDict is designed for working with datasets where each data object is 
+described by key/value pairs and certain key/value pairs are derived from other 
+ones, e.g. through a simple computation, a system call, a lookup in a database, 
+or some other system interaction.  LazyDict's purpose is to encapsulate the set 
+of such data relationships -- called `extensions' -- and work universally with 
+such data objects -- through, and only through, the normal dict interface.  
+
+Under the hood, each instance's `_laziness' setting (just another key/value 
+pair) can be used to customize whether to optimize for query count 
+(aggressively pre-fetch and cache data at every query opportunity), to optimize 
+for memory size (cache only the values for the keys explicitly used), or to 
+`lock' the instance such that no more data is extended.  There is also an 
+`_overwrite' setting, used to determine what to do with new values for existing 
+data.
+
+Several of the concepts here originated in egg, authored by Saul Youssef and 
+John A. Brunelle.
+
+.. moduleauthor:: John A. Brunelle <john_brunelle@harvard.edu>
+"""
+
+
+#--- laziness settings: how to handle extra available data
+
+LAZINESS_LOCKED = 0  #the data are considered complete -- no more extensions 
+                     #will be attempted
+
+LAZINESS_DATA_OPTIMIZED = 1  #data size is minimized, by not storing any extra 
+                             #values beyond what's explicitly used
+
+LAZINESS_QUERY_OPTIMIZED = 2  #queries are minimized, by prefetching and 
+                              #storing as much data as possible per query
+
+DEFAULT_LAZINESS = LAZINESS_QUERY_OPTIMIZED
+
+
+#--- overwrite settings: how to handle when new values appear for existing data
+
+OVERWRITE_UPDATE = 0  #replace the existing values with the new ones
+
+OVERWRITE_PRESERVE = 1  #preserve the existing values (throw away the new ones)
+
+DEFAULT_OVERWRITE = OVERWRITE_UPDATE
 
 
 class Extension(object):
-	"""Compute target data given source data."""
+	"""A computation of target data given source data.
+
+	To implement an Extension, define two class-variable tuples of keys -- the 
+	source set and the target set -- and implement __call__, to compute the 
+	tuple of target values given the source values.  If any target key is 
+	non-computable, return None in place of its value.
+	"""
+
 	source = ()  #a tuple of keys
 	target = ()  #a tuple of keys
-	
+
 	def __str__(self):
 		return '<(%s)->(%s)>' % (','.join(self.source), ','.join(self.target))
-	
+
 	def __call__(self, *args):
 		"""Return the target values.
 
@@ -21,73 +73,60 @@ class Extension(object):
 		:rtype: tuple (NOTE: possibly one-item -- if target is one-item)
 
 		If any target value is not available or computable, return None.
-		The default implementation is the identity (and not copies).
+		The default implementation is the identity (literally -- not copies).
 		"""
 		return args
 
 class LazyDict(dict):
-	"""A dict-like object for lazily computing data only when needed.
+	"""a dict enhanced with on-demand computation and query vs. cache optimization
 
-	The term `laziness' refers to optimization -- whether this should optimized 
-	to reduce data usage, queries, or something else.  The current options are:
-	
-		* LAZINESS_DATA_OPTIMIZED
-		
-		  Data size is minimized, by not storing any extra attributes beyond 
-		  what's necessary.
+	See the module documentation for the general overview.
 
-		* LAZINESS_QUERY_OPTIMIZED
-		
-		  Queries are minimized, by prefetching and storing as much data as 
-		  possible per query.
+	To implement a LazyDict, simply inherit from this base class and define the 
+	class variable `extensions', a list of Extension instances.  It's also 
+	extremely good practice to document the expected keys and value types in 
+	the class doc.
 
-		* LAZINESS_LOCKED
-		
-		  The data are considered complete -- no more queries will be issued.
+	__getattr__() and related methods will raise KeyError if the data is not 
+	present, such as:
 
-	getattr() will raise KeyError if the data is not present, such as:
+		* the key(s) necessary to compute the values through extensions are not 
+		  present
 
-		* the key(s) necessary to compute the value are not present
+		* there is no extension that computes the value for that key
+
 		* data extension is limited by the laziness setting
-		* the given key is not valid
-	
-	Values are never None -- that special value is used internally during the 
+
+	There are two `special' keys:
+
+		_laziness: the laziness setting (see module doc)
+
+		_overwrite: the overwrite setting (see module doc)
+
+	Values are never None -- that special value is used internally during 
 	extension evaluation.  This might change, we'll see what problems we run 
 	into...
 	"""
 
-	LAZINESS_LOCKED = 0
-	LAZINESS_DATA_OPTIMIZED = 1
-	LAZINESS_QUERY_OPTIMIZED = 2
 
-
-	#--- subclasses should set this, if there are any
+	#--- subclasses should set this
 
 	extensions = []  #a list of Extension instances
 
 
 	#--- internal telemetry
 
-	_extension_count = 0  #number of times an extension has been called
+	_extension_count = 0  #number of times extensions have been called
 
 
-	def __init__(self, *args, **kwargs):
-		dict.__init__(self, *args, **kwargs)
-
-		#for what to optimize; do NOT pop off this key
-		self['_laziness'] = LazyDict.LAZINESS_QUERY_OPTIMIZED
-
-		#whether or not to update existing data when new data is presented as a 
-		#side-effect of computing extensions; do NOT pop off this key
-		self['_overwrite'] = True
-	
 	def has_key(self, key):
 		"""dict's has_key, enhanced with laziness and extension functionality.
 
-		Note: has_key() is deprecated in Python; use the `in' operator, i.e. __contains__(), instead.
+		Note: has_key() is deprecated in Python; use the `in' operator, i.e. 
+		__contains__(), instead.
 		"""
 		return key in self
-	
+
 	def __contains__(self, key):
 		"""dict's __contains__, enhanced with laziness and extension functionality."""
 		try:
@@ -105,28 +144,32 @@ class LazyDict(dict):
 
 		Note that this is recursive, and there is no guarantee of termination.  
 		Specifically, if extensions create loops, this may recurse infinitely.
+
+		TODO:
+		The code assumes no extensions set _laziness and _overwrite.  That 
+		should be supported, as it could be useful.
 		"""
-		
+
 		try:
 			return dict.__getitem__(self, key)
 		except KeyError:
-			if dict.__getitem__(self,'_laziness') == LazyDict.LAZINESS_LOCKED:
+			if dict.get(self,'_laziness',DEFAULT_LAZINESS) == LAZINESS_LOCKED:
 				raise
 			else:
 				fulfilled = False
 				for e in self.extensions:
-					if key in e.target and all([ (sk in self) for sk in e.source ]):
+					if key in e.target and all([ (sk in self) for sk in e.source ]):  #(recursion)
 						LazyDict._extension_count += 1
 						for k, v in zip(e.target, e(*[ dict.__getitem__(self, sk) for sk in e.source ])):
 							if v is not None:
 								if k == key:
 									self[k] = v
 									fulfilled = True
-								elif dict.__getitem__(self,'_laziness') == LazyDict.LAZINESS_QUERY_OPTIMIZED:
-									if dict.__getitem__(self,'_overwrite'):
+								elif dict.get(self,'_laziness',DEFAULT_LAZINESS) == LAZINESS_QUERY_OPTIMIZED:
+									if dict.get(self,'_overwrite',DEFAULT_OVERWRITE) == OVERWRITE_UPDATE:
 										self[k] = v
 									else:
-										if not dict.__contains__(k):
+										if not dict.__contains__(self,k):
 											self[k] = v
 								else:
 									if fulfilled: break

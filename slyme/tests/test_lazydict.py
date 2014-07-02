@@ -246,7 +246,7 @@ class LazyDictTestCase(unittest.TestCase):
 	def test_getitem_extension_count_query_optimized(self):
 		"""Test that the an extension is computed only once."""
 		d = ExampleLazyDict(name=self.in_name, x=self.in_x, y=self.in_y)
-		d['_laziness'] = lazydict.LazyDict.LAZINESS_QUERY_OPTIMIZED  #(the default)
+		d['_laziness'] = lazydict.LAZINESS_QUERY_OPTIMIZED  #(the default)
 		
 		count = d._extension_count  #(class var, so this will have been jacked up by other instances)
 
@@ -267,7 +267,7 @@ class LazyDictTestCase(unittest.TestCase):
 	def test_getitem_extension_count_data_optimized(self):
 		"""Test that the an extension is computed only once."""
 		d = ExampleLazyDict(name=self.in_name, x=self.in_x, y=self.in_y)
-		d['_laziness'] = lazydict.LazyDict.LAZINESS_DATA_OPTIMIZED  #(the default)
+		d['_laziness'] = lazydict.LAZINESS_DATA_OPTIMIZED  #(the default)
 		
 		count = d._extension_count  #(class var, so this will have been jacked up by other instances)
 
