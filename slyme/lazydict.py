@@ -134,7 +134,7 @@ class LazyDict(dict):
 		except KeyError:
 			return False
 		return True
-
+	
 	def __getitem__(self, key):
 		"""dict's __getitem__, enhanced with laziness and extension functionality.
 
@@ -157,21 +157,45 @@ class LazyDict(dict):
 				raise
 			else:
 				fulfilled = False
-				for e in self.extensions:
-					if key in e.target and all([ (sk in self) for sk in e.source ]):  #(recursion)
-						LazyDict._extension_count += 1
-						for k, v in zip(e.target, e(*[ dict.__getitem__(self, sk) for sk in e.source ])):
-							if v is not None:
-								if k == key:
-									self[k] = v
-									fulfilled = True
-								elif dict.get(self,'_laziness',DEFAULT_LAZINESS) == LAZINESS_QUERY_OPTIMIZED:
-									if dict.get(self,'_overwrite',DEFAULT_OVERWRITE) == OVERWRITE_UPDATE:
+
+				if not fulfilled:
+					#make a first pass over all extensions without recursing, i.e. w/o trying indirect paths 
+					for e in self.extensions:
+						if key in e.target and all([ (dict.__contains__(self, sk)) for sk in e.source ]):  #non-recursive
+							LazyDict._extension_count += 1
+							for k, v in zip(e.target, e(*[ dict.__getitem__(self, sk) for sk in e.source ])):
+								if v is not None:
+									if k == key:
 										self[k] = v
-									else:
-										if not dict.__contains__(self,k):
+										fulfilled = True
+									elif dict.get(self,'_laziness',DEFAULT_LAZINESS) == LAZINESS_QUERY_OPTIMIZED:
+										if dict.get(self,'_overwrite',DEFAULT_OVERWRITE) == OVERWRITE_UPDATE:
 											self[k] = v
-								else:
-									if fulfilled: break
-						if fulfilled: break
+										else:
+											if not dict.__contains__(self,k):
+												self[k] = v
+									else:
+										if fulfilled: break
+							if fulfilled: break
+				
+				if not fulfilled:
+					#now try recursion, i.e. indirect paths
+					for e in self.extensions:
+						if key in e.target and all([ (sk in self) for sk in e.source ]):  #(recursion)
+							LazyDict._extension_count += 1
+							for k, v in zip(e.target, e(*[ dict.__getitem__(self, sk) for sk in e.source ])):
+								if v is not None:
+									if k == key:
+										self[k] = v
+										fulfilled = True
+									elif dict.get(self,'_laziness',DEFAULT_LAZINESS) == LAZINESS_QUERY_OPTIMIZED:
+										if dict.get(self,'_overwrite',DEFAULT_OVERWRITE) == OVERWRITE_UPDATE:
+											self[k] = v
+										else:
+											if not dict.__contains__(self,k):
+												self[k] = v
+									else:
+										if fulfilled: break
+							if fulfilled: break
+				
 				return dict.__getitem__(self, key)  #may still raise KeyError
