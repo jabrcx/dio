@@ -7,8 +7,8 @@
 import time
 import unittest, mock
 
-import slyme
-from slyme import lazydict
+import dio
+from dio import lazydict
 
 
 #--- an example LazyDict
