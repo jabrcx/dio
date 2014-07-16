@@ -1,6 +1,4 @@
-# Copyright (c) 2013-2014
-# John A. Brunelle
-# Harvard FAS Research Computing
+# Copyright (c) 2014, John A. Brunelle
 # All rights reserved.
 
 """a dict with transparent, on-demand computation and optimizable memoization

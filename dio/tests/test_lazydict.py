@@ -1,5 +1,4 @@
-# Copyright (c) 2013-2014
-# Harvard FAS Research Computing
+# Copyright (c) 2014, John A. Brunelle
 # All rights reserved.
 
 """unit tests"""
