@@ -3,8 +3,8 @@
 
 """unit tests"""
 
-import time
-import unittest, mock
+import time, unittest
+import mock
 
 import dio
 from dio import lazydict
