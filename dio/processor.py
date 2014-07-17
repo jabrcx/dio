@@ -8,7 +8,7 @@ import sys
 
 
 def processor(f):
-	"""Prime a coroutine function by calling it and its next()."""
+	"""Prime a coroutine function by calling its next()."""
 	def primed_f(*args,**kwargs):
 		f2 = f(*args,**kwargs)
 		f2.next()
@@ -16,17 +16,17 @@ def processor(f):
 	return primed_f
 
 @processor
-def _STDERR():
-	while True:
-		d = yield
-		sys.stderr.write(str(d))
-		sys.stderr.write('\n')
-STDERR = _STDERR()
-
-@processor
-def _STDOUT():
+def stdout_printer():
 	while True:
 		d = yield
 		sys.stdout.write(str(d))
 		sys.stdout.write('\n')
-STDOUT = _STDOUT()
+STDOUT = stdout_printer()
+
+@processor
+def stderr_printer():
+	while True:
+		d = yield
+		sys.stderr.write(str(d))
+		sys.stderr.write('\n')
+STDERR = stderr_printer()
