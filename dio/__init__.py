@@ -4,7 +4,7 @@
 """lazy dict-based i/o processing pipelines"""
 
 
-import sys
+import sys, cPickle
 
 
 #--- decorators for the basic roles
@@ -80,8 +80,36 @@ default_err = err_printer()
 
 def source(iterable, out=None, err=None):
 	"""Turn any iterable into a source to start a processing pipeline."""
+
+	#set default output, since this is not taken care of by a decorator
+	global default_out
+	if out is None: out = default_out
+
+	#send each
 	for x in iterable:
 		out.send(x)
+
+
+#--- serialization
+
+#pickling to/from stdout/stdin
+@processor
+def out_pickle(out=None, err=None):
+	while True:
+		d = yield
+		cPickle.dump(d, sys.stdout)
+def in_pickle(out=None, err=None):
+	#set default output, since this is not taken care of by a decorator
+	global default_out
+	if out is None: out = default_out
+
+	#send each
+	while True:
+		try:
+			out.send(cPickle.load(sys.stdin))
+		except EOFError:
+			break
+
 
 
 #--- common constructs
