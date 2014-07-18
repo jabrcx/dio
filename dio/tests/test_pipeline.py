@@ -19,6 +19,8 @@ class ProcessorTestCase(unittest.TestCase):
 		dio.accumulated_err = []
 
 	def test_pipeline_out_err(self):
+		#--- some processors
+
 		@dio.processor
 		def filter1(out=None, err=None):
 			while True:
@@ -44,6 +46,9 @@ class ProcessorTestCase(unittest.TestCase):
 				assert d['letter'] in 'xy', "the filter did not produce the expected results"
 				out.send(d)
 
+
+		#--- run it
+
 		dio.source([ {'letter':c} for c in string.ascii_letters ],
 			out=filter1(
 				out=filter2(
@@ -51,6 +56,9 @@ class ProcessorTestCase(unittest.TestCase):
 				)
 			)
 		)
+
+
+		#--- inspect output
 
 		self.assertEqual(
 			dio.accumulated_out,
@@ -70,23 +78,36 @@ class ProcessorTestCase(unittest.TestCase):
 		)
 
 	def test_apply(self):
+		#--- something to apply
+
 		def random_gate(d):
 			import random
 			if random.randint(0,1)==0:
 				yield d
 
+
+		#--- run it
+
 		dio.source([ {'letter':c} for c in string.ascii_letters ],
 			out=dio.apply(random_gate)
 		)
+
+
+		#--- inspect output
 
 		self.assertTrue(len(dio.accumulated_out) > 0)
 		self.assertTrue(len(dio.accumulated_out) < len(string.ascii_letters)) #(there is an astronomically small chance this will randomly not be true)
 		self.assertEqual(len(dio.accumulated_err), 0)
 
 	def test_uniq(self):
+		#--- run it
+
 		dio.source(({1:'foo'}, {1:'foo'}, {1:'bar'}),
 			out=dio.uniq()
 		)
+
+
+		#--- inspect output
 
 		l_want = 2
 		l_got = len(dio.accumulated_out)
@@ -95,16 +116,29 @@ class ProcessorTestCase(unittest.TestCase):
 		)
 	
 	def test_pickling(self):
+		#stash original stdio streams
 		stdin  = sys.stdin
 		stdout = sys.stdout
+		
 		try:
+			#--- run it
+
+			#set stdout to be a string we can feed back in
 			sys.stdout = cStringIO.StringIO()
+			
+			#run the serialization
 			dio.source(({'foo':'bar'}, {'x':42}),
 				out=dio.out_pickle()
 			)
 
+			#set stdin to be the string we wrote
 			sys.stdin = cStringIO.StringIO(sys.stdout.getvalue())
+
+			#run the deserialization
 			dio.in_pickle()
+
+
+			#--- inspect output
 
 			self.assertEqual(
 				dio.accumulated_out,
@@ -119,6 +153,7 @@ class ProcessorTestCase(unittest.TestCase):
 			)
 
 		finally:
+			#reset original stdio streams
 			sys.stdin  = stdin
 			sys.stdout = stdout
 
