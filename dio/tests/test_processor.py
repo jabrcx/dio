@@ -5,19 +5,18 @@
 
 
 import sys, time, string, unittest
-import mock
 
-import dio.processor
-from dio.processor import processor, source, filter, apply, uniq
+import dio
+from dio import processor, source, filter, apply, uniq
 
 
 class ProcessorTestCase(unittest.TestCase):
 	def setUp(self):
-		dio.processor.default_out = dio.processor.out_accumulator()
-		dio.processor.default_err = dio.processor.err_accumulator()
+		dio.default_out = dio.out_accumulator()
+		dio.default_err = dio.err_accumulator()
 
-		dio.processor.accumulated_out = []
-		dio.processor.accumulated_err = []
+		dio.accumulated_out = []
+		dio.accumulated_err = []
 
 	def test_pipeline_out_err(self):
 		@processor
@@ -55,7 +54,7 @@ class ProcessorTestCase(unittest.TestCase):
 		)
 
 		self.assertEqual(
-			dio.processor.accumulated_out,
+			dio.accumulated_out,
 			[
 				{'letter': 'x'},
 				{'letter': 'y'},
@@ -63,7 +62,7 @@ class ProcessorTestCase(unittest.TestCase):
 			"unexpected out"
 		)
 		self.assertEqual(
-			dio.processor.accumulated_err,
+			dio.accumulated_err,
 			[
 				{'error': 'test error message for e'},
 				{'error': 'test error message for z'},
@@ -81,9 +80,9 @@ class ProcessorTestCase(unittest.TestCase):
 			out=apply(random_gate)
 		)
 
-		self.assertTrue(len(dio.processor.accumulated_out) > 0)
-		self.assertTrue(len(dio.processor.accumulated_out) < len(string.ascii_letters)) #(there is an astronomically small chance this will randomly not be true)
-		self.assertEqual(len(dio.processor.accumulated_err), 0)
+		self.assertTrue(len(dio.accumulated_out) > 0)
+		self.assertTrue(len(dio.accumulated_out) < len(string.ascii_letters)) #(there is an astronomically small chance this will randomly not be true)
+		self.assertEqual(len(dio.accumulated_err), 0)
 
 	def test_uniq(self):
 		source(({1:'foo'}, {1:'foo'}, {1:'bar'}),
@@ -91,7 +90,7 @@ class ProcessorTestCase(unittest.TestCase):
 		)
 
 		l_want = 2
-		l_got = len(dio.processor.accumulated_out)
+		l_got = len(dio.accumulated_out)
 		self.assertEqual(l_want, l_got,
 			"uniq did not yield the proper number of output dicts; expected %d, got %s" % (l_want, l_got)
 		)

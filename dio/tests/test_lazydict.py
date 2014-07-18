@@ -4,7 +4,6 @@
 """unit tests"""
 
 import time, unittest
-import mock
 
 import dio
 from dio import lazydict
