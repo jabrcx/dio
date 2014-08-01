@@ -114,48 +114,70 @@ class ProcessorTestCase(unittest.TestCase):
 		self.assertEqual(l_want, l_got,
 			"uniq did not yield the proper number of output dicts; expected %d, got %s" % (l_want, l_got)
 		)
-	
+
 	def test_pickling(self):
-		#stash original stdio streams
-		stdin  = sys.stdin
-		stdout = sys.stdout
-		
-		try:
-			#--- run it
+		#--- run it
 
-			#set stdout to be a string we can feed back in
-			sys.stdout = cStringIO.StringIO()
-			
-			#run the serialization
-			dio.source(({'foo':'bar'}, {'x':42}),
-				out=dio.out_pickle()
-			)
+		#set stdout to be a string we can feed back in
+		fout = cStringIO.StringIO()
 
-			#set stdin to be the string we wrote
-			sys.stdin = cStringIO.StringIO(sys.stdout.getvalue())
+		#run the serialization
+		dio.source(({'foo':'bar'}, {'x':42}),
+			out=dio.out_pickle(out=fout)
+		)
 
-			#run the deserialization
-			dio.in_pickle()
+		#set stdin to be the string we wrote
+		fin = cStringIO.StringIO(fout.getvalue())
+
+		#run the deserialization
+		dio.in_pickle(inn=fin)
 
 
-			#--- inspect output
+		#--- inspect output
 
-			self.assertEqual(
-				dio.accumulated_out,
-				[
-					{'foo': 'bar'},
-					{'x': 42},
-				],
-			)
-			self.assertEqual(
-				dio.accumulated_err,
-				[],
-			)
+		self.assertEqual(
+			dio.accumulated_out,
+			[
+				{'foo': 'bar'},
+				{'x': 42},
+			],
+		)
+		self.assertEqual(
+			dio.accumulated_err,
+			[],
+		)
 
-		finally:
-			#reset original stdio streams
-			sys.stdin  = stdin
-			sys.stdout = stdout
+	def test_json(self):
+		#--- run it
+
+		#set stdout to be a string we can feed back in
+		fout = cStringIO.StringIO()
+
+		#run the serialization
+		dio.source(({'foo':'bar'}, {'x':42}),
+			out=dio.out_json(out=fout)
+		)
+
+		#set stdin to be the string we wrote
+		fin = cStringIO.StringIO(fout.getvalue())
+
+		#run the deserialization
+		dio.in_json(inn=fin)
+
+
+		#--- inspect output
+
+		self.assertEqual(
+			dio.accumulated_out,
+			[
+				{'foo': 'bar'},
+				{'x': 42},
+			],
+		)
+		self.assertEqual(
+			dio.accumulated_err,
+			[],
+		)
 
 
 if __name__=='__main__':

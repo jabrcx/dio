@@ -34,21 +34,42 @@ def processor(f):
 	return primed_f
 
 
+#--- sources
+
+#Sources are not normal processors (i.e. are not coroutines) since they don't 
+#get sent data.  (Faking it by including an unreachable yield won't work since 
+#the standard @processor priming will fully run them, raising StopIteration.)
+
+def source(iterable, out=None, err=None):
+	"""Turn any iterable into a source to start a processing pipeline."""
+
+	#set default output, since this is not taken care of by a decorator
+	global default_out
+	if out is None: out = default_out
+
+	#send each
+	for x in iterable:
+		out.send(x)
+
+
 #--- standard sinks
+
+#though these have the form of standard processors, out and err should be 
+#file-like objects, not other processors.
 
 #print
 @processor
-def out_printer(out=None, err=None):
+def out_printer(out=sys.stdout, err=None):
 	while True:
 		d = yield
-		sys.stdout.write(str(d))
-		sys.stdout.write('\n')
+		out.write(str(d))
+		out.write('\n')
 @processor
-def err_printer(out=None, err=None):
+def err_printer(out=None, err=sys.stderr):
 	while True:
 		d = yield
-		sys.stderr.write(str(d))
-		sys.stderr.write('\n')
+		err.write(str(d))
+		err.write('\n')
 
 #accumulate
 accumulated_out = []
@@ -72,33 +93,16 @@ default_out = out_printer()
 default_err = err_printer()
 
 
-#--- sources
-
-#Sources are not normal processors (i.e. are not coroutines) since they don't 
-#get sent data.  (Faking it by including an unreachable yield won't work since 
-#the standard @processor priming will fully run them, raising StopIteration.)
-
-def source(iterable, out=None, err=None):
-	"""Turn any iterable into a source to start a processing pipeline."""
-
-	#set default output, since this is not taken care of by a decorator
-	global default_out
-	if out is None: out = default_out
-
-	#send each
-	for x in iterable:
-		out.send(x)
-
-
 #--- serialization
 
-#pickling to/from stdout/stdin
+#to/from stdout/stdin w/ pickle
 @processor
 def out_pickle(out=None, err=None):
+	"""like other sinks, out and err should be file-like objects"""
 	while True:
 		d = yield
-		cPickle.dump(d, sys.stdout)
-def in_pickle(out=None, err=None):
+		cPickle.dump(d, out)
+def in_pickle(inn=sys.stdin, out=None, err=None):
 	#set default output, since this is not taken care of by a decorator
 	global default_out
 	if out is None: out = default_out
@@ -106,10 +110,27 @@ def in_pickle(out=None, err=None):
 	#send each
 	while True:
 		try:
-			out.send(cPickle.load(sys.stdin))
+			out.send(cPickle.load(inn))
 		except EOFError:
 			break
 
+#to/from stdout/stdin w/ json
+import json
+@processor
+def out_json(out=sys.stdout, err=None):
+	"""like other sinks, out and err should be file-like objects"""
+	while True:
+		d = yield
+		json.dump(d, out)
+		out.write('\n')
+def in_json(inn=sys.stdin, out=None, err=None):
+	#set default output, since this is not taken care of by a decorator
+	global default_out
+	if out is None: out = default_out
+
+	#send each
+	for line in inn.readlines():
+		out.send(json.loads(line))
 
 
 #--- common constructs
