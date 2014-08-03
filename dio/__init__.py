@@ -43,9 +43,11 @@ def processor(f):
 def source(iterable, out=None, err=None):
 	"""Turn any iterable into a source to start a processing pipeline."""
 
-	#set default output, since this is not taken care of by a decorator
+	#set default i/o, since this is not taken care of by a decorator
 	global default_out
 	if out is None: out = default_out
+	global default_err
+	if err is None: err = default_err
 
 	#send each
 	for x in iterable:
@@ -87,25 +89,16 @@ def err_accumulator(out=None, err=None):
 		d = yield
 		accumulated_err.append(d)
 
-#the default output and error sinks
-#these are intended to be changed, if desired, at the beginning of a pipeline
-default_out = out_printer()
-default_err = err_printer()
-
 
 #--- serialization
 
 #to/from stdout/stdin w/ pickle
-@processor
-def out_pickle(out=None, err=None):
-	"""like other sinks, out and err should be file-like objects"""
-	while True:
-		d = yield
-		cPickle.dump(d, out)
 def in_pickle(inn=sys.stdin, out=None, err=None):
-	#set default output, since this is not taken care of by a decorator
+	#set default i/o, since this is not taken care of by a decorator
 	global default_out
 	if out is None: out = default_out
+	global default_err
+	if err is None: err = default_err
 
 	#send each
 	while True:
@@ -113,9 +106,29 @@ def in_pickle(inn=sys.stdin, out=None, err=None):
 			out.send(cPickle.load(inn))
 		except EOFError:
 			break
+@processor
+def out_pickle(out=None, err=None):
+	"""like other sinks, out and err should be file-like objects"""
+	while True:
+		d = yield
+		cPickle.dump(d, out)
 
 #to/from stdout/stdin w/ json
 import json
+def in_json(inn=sys.stdin, out=None, err=None):
+	#set default i/o, since this is not taken care of by a decorator
+	global default_out
+	if out is None: out = default_out
+	global default_err
+	if err is None: err = default_err
+
+	#send each
+	for line in inn.readlines():
+		try:
+			out.send(json.loads(line))
+		except ValueError:
+			if line.strip()!='':
+				raise
 @processor
 def out_json(out=sys.stdout, err=None):
 	"""like other sinks, out and err should be file-like objects"""
@@ -123,20 +136,37 @@ def out_json(out=sys.stdout, err=None):
 		d = yield
 		json.dump(d, out)
 		out.write('\n')
-def in_json(inn=sys.stdin, out=None, err=None):
-	#set default output, since this is not taken care of by a decorator
-	global default_out
-	if out is None: out = default_out
 
-	#send each
-	for line in inn.readlines():
-		out.send(json.loads(line))
+
+#--- default i/o
+
+#the default output and error sinks
+#these are intended to be changed, if desired, at the beginning of a pipeline
+default_in = in_json
+default_out = out_json(out=sys.stdout)
+default_err = out_json(out=sys.stderr)
+
+
+#--- cli
+
+def cli(p):
+	"""Run any processor as a standalone cli instance in a shell pipeline."""
+	default_in(out=p())
 
 
 #--- common constructs
 
 @processor
+def identity(out=None, err=None):
+	"""Output all input dicts."""
+	while True:
+		d = yield
+		out.send(d)
+
+
+@processor
 def filter(f, out=None, err=None):
+	"""Output input dicts iff f(d) is True."""
 	while True:
 		d = yield
 		try:
