@@ -148,7 +148,7 @@ class ProcessorTestCase(unittest.TestCase):
 
 
 		#--- inspect output
-		
+
 		expected_count = 2
 
 		self.assertEqual(len(dio.accumulated_out), 1)
@@ -195,7 +195,7 @@ class ProcessorTestCase(unittest.TestCase):
 
 	def test_json(self):
 		"""Test serialization by json."""
-		
+
 		#--- run it
 
 		#set stdout to be a string we can feed back in
@@ -280,9 +280,9 @@ class ProcessorTestCase(unittest.TestCase):
 
 
 		#--- inspect output
-		
+
 		expected_count = 3
-		
+
 		self.assertEqual(len(dio.accumulated_out), 1)
 		self.assertEqual(
 			dio.accumulated_out[0]["count"],

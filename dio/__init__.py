@@ -4,7 +4,7 @@
 """lazy dict-based i/o processing pipelines"""
 
 
-import sys, cPickle
+import sys, cPickle, functools
 
 
 #--- decorators for the basic roles
@@ -12,14 +12,15 @@ import sys, cPickle
 def processor(f):
 	"""Decorate a processing function.
 
-	This is for extended generator functions that get sent input and send 
-	output.  This sets up its i/o and primes it such that it's ready to be sent 
+	This is for extended generator functions that get sent input and send
+	output.  This sets up its i/o and primes it such that it's ready to be sent
 	input.
 	"""
+	@functools.wraps(f)  #(for __doc__)
 	def primed_f(*args,**kwargs):
-		#set out and err to default values if not specified; this accomplishes 
-		#later binding than if they were simple defaults in the original 
-		#function definition; default_out/err won't be available for the 
+		#set out and err to default values if not specified; this accomplishes
+		#later binding than if they were simple defaults in the original
+		#function definition; default_out/err won't be available for the
 		#standard sink processors, since they are used to set default_out/err
 		if 'default_out' in globals() and 'default_err' in globals():
 			for k, v in (('out',default_out), ('err',default_err)):
@@ -37,11 +38,11 @@ def processor(f):
 def restart_on_error(f):
 	"""Decorate a processing function so that it's restarted upon any errors.
 
-	Ideally, it would *continue* on error, but you can't resume a generator 
-	after it's raised an exception.  Therefore this restarts a new instance of 
+	Ideally, it would *continue* on error, but you can't resume a generator
+	after it's raised an exception.  Therefore this restarts a new instance of
 	the generator.
 
-	This @restart_on_error decorator should be applied *before* (i.e. on a 
+	This @restart_on_error decorator should be applied *before* (i.e. on a
 	lower line) than the @processor decorator.
 	"""
 	def restarter(*args, **kwargs):
@@ -62,7 +63,7 @@ def restart_on_error(f):
 
 def e2d(e):
 	"""Convert an Exception to a LazyDict.
-	
+
 	#FIXME this needs a lot of work -- it's really just a placeholder for now.
 	"""
 	return {'message': e.message}
@@ -70,8 +71,8 @@ def e2d(e):
 
 #--- sources
 
-#Sources are not normal processors (i.e. are not coroutines) since they don't 
-#get sent data.  (Faking it by including an unreachable yield won't work since 
+#Sources are not normal processors (i.e. are not coroutines) since they don't
+#get sent data.  (Faking it by including an unreachable yield won't work since
 #the standard @processor priming will fully run them, raising StopIteration.)
 
 def source(iterable, out=None, err=None):
@@ -90,7 +91,7 @@ def source(iterable, out=None, err=None):
 
 #--- standard sinks
 
-#though these have the form of standard processors, out and err should be 
+#though these have the form of standard processors, out and err should be
 #file-like objects, not other processors.
 
 #print
@@ -213,7 +214,7 @@ def filter(f, out=None, err=None):
 def apply(f, out=None, err=None):
 	"""For each sent d, send all f(d).
 
-	:param f: a callable that accepts a single input dict and yields zero or 
+	:param f: a callable that accepts a single input dict and yields zero or
 		more output dicts.
 
 	.. note::
