@@ -5,13 +5,13 @@
 
 
 import sys, time, string, cStringIO, unittest
-
 import dio
-from dio import processor, source, out_pickle, in_pickle, filter, apply, uniq
 
 
 class ProcessorTestCase(unittest.TestCase):
 	def setUp(self):
+		"""Send out/err to inspectable accumulators rather than the screen."""
+
 		dio.default_out = dio.out_accumulator()
 		dio.default_err = dio.err_accumulator()
 
@@ -19,6 +19,8 @@ class ProcessorTestCase(unittest.TestCase):
 		dio.accumulated_err = []
 
 	def test_pipeline_out_err(self):
+		"""Test basic pipeline functionality, including out/err."""
+
 		#--- some processors
 
 		@dio.processor
@@ -77,45 +79,89 @@ class ProcessorTestCase(unittest.TestCase):
 			"unexpected err"
 		)
 
-	def test_apply(self):
-		#--- something to apply
+	def test_restart_on_error(self):
+		"""Test processors the restart upon errors."""
 
-		def random_gate(d):
-			import random
-			if random.randint(0,1)==0:
-				yield d
+		#--- a processor that fails on every other (even) inputs
+
+		@dio.processor
+		@dio.restart_on_error
+		def every_other_fails(out=None, err=None):
+			i = 0
+			while True:
+				d = yield
+				if i%2==1:
+					raise Exception("bad one")
+				out.send(d)
+				i += 1
 
 
 		#--- run it
 
-		dio.source([ {'letter':c} for c in string.ascii_letters ],
-			out=dio.apply(random_gate)
+		dio.source(({"name":"a"}, {"name":"b"}, {"name":"c"}),
+			out=every_other_fails()
 		)
 
 
 		#--- inspect output
 
-		self.assertTrue(len(dio.accumulated_out) > 0)
-		self.assertTrue(len(dio.accumulated_out) < len(string.ascii_letters)) #(there is an astronomically small chance this will randomly not be true)
-		self.assertEqual(len(dio.accumulated_err), 0)
-
-	def test_uniq(self):
-		#--- run it
-
-		dio.source(({1:'foo'}, {1:'foo'}, {1:'bar'}),
-			out=dio.uniq()
-		)
-
-
-		#--- inspect output
-
+		#the first and third should be in out
 		l_want = 2
 		l_got = len(dio.accumulated_out)
-		self.assertEqual(l_want, l_got,
-			"uniq did not yield the proper number of output dicts; expected %d, got %s" % (l_want, l_got)
+		self.assertEqual(l_want, l_got)
+
+		#the second should've generated an entry in err
+		l_want = 1
+		l_got = len(dio.accumulated_err)
+		self.assertEqual(l_want, l_got)
+
+	def test_restart_on_error_in_pipeline(self):
+		"""Make sure a restart-on-error processor does not restart others.
+
+		An example of something that has state is dio.count.  This tests sends
+		the output of a restart-on-error processor (that also produces errors)
+		to dio.count and ensure there is one total count rather than two
+		separate partial counts.
+		"""
+
+		#--- a processor that fails on every other (even) inputs
+
+		@dio.processor
+		@dio.restart_on_error
+		def every_other_fails(out=None, err=None):
+			i = 0
+			while True:
+				d = yield
+				if i%2==1:
+					raise Exception("bad one")
+				out.send(d)
+				i += 1
+
+
+		#--- run it
+
+		dio.source(({"name":"a"}, {"name":"b"}, {"name":"c"}),
+			out=every_other_fails(
+				out=dio.count()
+			)
 		)
 
+
+		#--- inspect output
+		
+		expected_count = 2
+
+		self.assertEqual(len(dio.accumulated_out), 1)
+		self.assertEqual(
+			dio.accumulated_out[0]["count"],
+			expected_count
+		)
+
+		#(there is that one in stderr, too, but we tested that above)
+
 	def test_pickling(self):
+		"""Test serialization by pickling."""
+
 		#--- run it
 
 		#set stdout to be a string we can feed back in
@@ -148,6 +194,8 @@ class ProcessorTestCase(unittest.TestCase):
 		)
 
 	def test_json(self):
+		"""Test serialization by json."""
+		
 		#--- run it
 
 		#set stdout to be a string we can feed back in
@@ -177,6 +225,68 @@ class ProcessorTestCase(unittest.TestCase):
 		self.assertEqual(
 			dio.accumulated_err,
 			[],
+		)
+
+	def test_apply(self):
+		"""Test dio.apply."""
+
+		#--- something to apply
+
+		def random_gate(d):
+			import random
+			if random.randint(0,1)==0:
+				yield d
+
+
+		#--- run it
+
+		dio.source([ {'letter':c} for c in string.ascii_letters ],
+			out=dio.apply(random_gate)
+		)
+
+
+		#--- inspect output
+
+		self.assertTrue(len(dio.accumulated_out) > 0)
+		self.assertTrue(len(dio.accumulated_out) < len(string.ascii_letters)) #(there is an astronomically small chance this will randomly not be true)
+		self.assertEqual(len(dio.accumulated_err), 0)
+
+	def test_uniq(self):
+		"""Test dio.uniq."""
+
+		#--- run it
+
+		dio.source(({"name":"foo"}, {"name":"foo"}, {"name":"bar"}),
+			out=dio.uniq()
+		)
+
+
+		#--- inspect output
+
+		l_want = 2
+		l_got = len(dio.accumulated_out)
+		self.assertEqual(l_want, l_got,
+			"uniq did not yield the proper number of output dicts; expected %d, got %s" % (l_want, l_got)
+		)
+
+	def test_count(self):
+		"""Test dio.count."""
+
+		#--- run it
+
+		dio.source(({"name":"foo"}, {"name":"foo"}, {"name":"bar"}),
+			out=dio.count()
+		)
+
+
+		#--- inspect output
+		
+		expected_count = 3
+		
+		self.assertEqual(len(dio.accumulated_out), 1)
+		self.assertEqual(
+			dio.accumulated_out[0]["count"],
+			expected_count
 		)
 
 

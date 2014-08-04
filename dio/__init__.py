@@ -12,8 +12,9 @@ import sys, cPickle
 def processor(f):
 	"""Decorate a processing function.
 
-	This is for functions that get sent input and send output.  This sets up 
-	its i/o and primes it such that it's ready to be sent input.
+	This is for extended generator functions that get sent input and send 
+	output.  This sets up its i/o and primes it such that it's ready to be sent 
+	input.
 	"""
 	def primed_f(*args,**kwargs):
 		#set out and err to default values if not specified; this accomplishes 
@@ -32,6 +33,39 @@ def processor(f):
 
 		return f2
 	return primed_f
+
+def restart_on_error(f):
+	"""Decorate a processing function so that it's restarted upon any errors.
+
+	Ideally, it would *continue* on error, but you can't resume a generator 
+	after it's raised an exception.  Therefore this restarts a new instance of 
+	the generator.
+
+	This @restart_on_error decorator should be applied *before* (i.e. on a 
+	lower line) than the @processor decorator.
+	"""
+	def restarter(*args, **kwargs):
+		while True:
+			try:
+				f2 = f(*args, **kwargs)
+				f2.next()
+				while True:
+					d = yield
+					f2.send(d)
+			except Exception, e:
+				#(GeneratorExit is not an Exception, just BaseException)
+				kwargs['err'].send(e2d(e))
+	return restarter
+
+
+#--- exception handling
+
+def e2d(e):
+	"""Convert an Exception to a LazyDict.
+	
+	#FIXME this needs a lot of work -- it's really just a placeholder for now.
+	"""
+	return {'message': e.message}
 
 
 #--- sources
@@ -206,3 +240,14 @@ def uniq(out=None, err=None):
 		if d!=prev:  #(always True the first time, when prev is None)
 			out.send(d)
 		prev = d
+
+@processor
+def count(out=None, err=None):
+	"""The dio processor analogous of coreutils' wc."""
+	count = 0
+	try:
+		while True:
+			d = yield
+			count += 1
+	except GeneratorExit:
+		out.send({"count":count})
