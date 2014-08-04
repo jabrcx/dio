@@ -1,0 +1,302 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>dio.lazydict &mdash; dio  documentation</title>
+    
+    <link rel="stylesheet" href="../../_static/default.css" type="text/css" />
+    <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../../',
+        VERSION:     '',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="../../_static/jquery.js"></script>
+    <script type="text/javascript" src="../../_static/underscore.js"></script>
+    <script type="text/javascript" src="../../_static/doctools.js"></script>
+    <link rel="top" title="dio  documentation" href="../../index.html" />
+    <link rel="up" title="dio" href="../dio.html" /> 
+  </head>
+  <body>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li><a href="../../index.html">dio  documentation</a> &raquo;</li>
+          <li><a href="../index.html" >Module code</a> &raquo;</li>
+          <li><a href="../dio.html" accesskey="U">dio</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body">
+            
+  <h1>Source code for dio.lazydict</h1><div class="highlight"><pre>
+<span class="c"># Copyright (c) 2014, John A. Brunelle</span>
+<span class="c"># All rights reserved.</span>
+
+<span class="sd">&quot;&quot;&quot;a dict with transparent, on-demand computation and optimizable memoization</span>
+
+<span class="sd">LazyDict is for datasets of associative arrays where the presence of some </span>
+<span class="sd">key/value pairs allows for the derivation of other key/value pairs (e.g. </span>
+<span class="sd">through a direct computation, a system call, a database lookup, or some other </span>
+<span class="sd">system interaction).  Data relationships are captured as simple, isolated </span>
+<span class="sd">`Extensions&#39; -- functions that compute a set of values for target keys given </span>
+<span class="sd">a set of values for the source keys.  Defining a LazyDict class is just a </span>
+<span class="sd">matter of defining a set of such Extensions.  Using a LazyDict is the same as </span>
+<span class="sd">using a regular dict.</span>
+
+<span class="sd">Internally, key values are memoized to avoid recomputation when reused.  The </span>
+<span class="sd">memoization can be configured to optimize for query count (aggressively </span>
+<span class="sd">prefetch and cache data at every query opportunity), to optimize for memory </span>
+<span class="sd">size (cache only the values for the keys explicitly used), or to `lock&#39; the </span>
+<span class="sd">instance such that no more data is extended.  It can also be configured to </span>
+<span class="sd">overwrite or keep existing data when new data is presented.  Keeping with the </span>
+<span class="sd">pure dict interface, this memoization is configured through normal dict </span>
+<span class="sd">key/value pairs (`_laziness&#39;, and `_overwrite&#39;).</span>
+
+<span class="sd">The concept of extensions as used here originated in egg, authored by Saul </span>
+<span class="sd">Youssef and John A. Brunelle.</span>
+
+<span class="sd">.. moduleauthor:: John A. Brunelle &lt;john_brunelle@harvard.edu&gt;</span>
+<span class="sd">&quot;&quot;&quot;</span>
+
+
+<span class="kn">from</span> <span class="nn">itertools</span> <span class="kn">import</span> <span class="n">repeat</span><span class="p">,</span> <span class="n">izip</span><span class="p">,</span> <span class="n">chain</span>
+
+
+<span class="c">#--- laziness settings: how to handle extra available data</span>
+
+<span class="c">#note there is currently no setting which allows data to be computed without </span>
+<span class="c">#memoizing it; these settings control what to do extra available data.</span>
+
+<span class="n">LAZINESS_LOCKED</span> <span class="o">=</span> <span class="mi">0</span>  <span class="c">#the data are considered complete -- no more extensions </span>
+                     <span class="c">#will be attempted</span>
+
+<span class="n">LAZINESS_DATA_OPTIMIZED</span> <span class="o">=</span> <span class="mi">1</span>  <span class="c">#data size is minimized, by not storing any extra </span>
+                             <span class="c">#values beyond what&#39;s explicitly used</span>
+
+<span class="n">LAZINESS_QUERY_OPTIMIZED</span> <span class="o">=</span> <span class="mi">2</span>  <span class="c">#queries are minimized, by prefetching and </span>
+                              <span class="c">#storing as much data as possible per query</span>
+
+<span class="n">DEFAULT_LAZINESS</span> <span class="o">=</span> <span class="n">LAZINESS_QUERY_OPTIMIZED</span>
+
+
+<span class="c">#--- overwrite settings: how to handle when new values appear for existing data</span>
+
+<span class="n">OVERWRITE_UPDATE</span> <span class="o">=</span> <span class="mi">0</span>  <span class="c">#replace the existing values with the new ones</span>
+
+<span class="n">OVERWRITE_PRESERVE</span> <span class="o">=</span> <span class="mi">1</span>  <span class="c">#preserve the existing values (throw away the new ones)</span>
+
+<span class="n">DEFAULT_OVERWRITE</span> <span class="o">=</span> <span class="n">OVERWRITE_UPDATE</span>
+
+
+<div class="viewcode-block" id="Extension"><a class="viewcode-back" href="../../dio.html#dio.lazydict.Extension">[docs]</a><span class="k">class</span> <span class="nc">Extension</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
+	<span class="sd">&quot;&quot;&quot;A computation of target data given source data.</span>
+
+<span class="sd">	To implement an Extension, define two class-variable tuples of keys -- the </span>
+<span class="sd">	source set and the target set -- and implement __call__, to compute the </span>
+<span class="sd">	tuple of target values given the source values.  If any target key is </span>
+<span class="sd">	non-computable, return None in place of its value.</span>
+<span class="sd">	&quot;&quot;&quot;</span>
+
+	<span class="n">source</span> <span class="o">=</span> <span class="p">()</span>  <span class="c">#a tuple of keys</span>
+	<span class="n">target</span> <span class="o">=</span> <span class="p">()</span>  <span class="c">#a tuple of keys</span>
+
+	<span class="k">def</span> <span class="nf">__str__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+		<span class="k">return</span> <span class="s">&#39;&lt;(</span><span class="si">%s</span><span class="s">)-&gt;(</span><span class="si">%s</span><span class="s">)&gt;&#39;</span> <span class="o">%</span> <span class="p">(</span><span class="s">&#39;,&#39;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">source</span><span class="p">),</span> <span class="s">&#39;,&#39;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">target</span><span class="p">))</span>
+
+	<span class="k">def</span> <span class="nf">__call__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">):</span>
+		<span class="sd">&quot;&quot;&quot;Return the target values.</span>
+
+<span class="sd">		:param args: the source values</span>
+
+<span class="sd">		:rtype: tuple (NOTE: possibly one-item -- if target is one-item)</span>
+
+<span class="sd">		If any target value is not available or computable, return None in its </span>
+<span class="sd">		place.  The default implementation is the identity (literally -- not </span>
+<span class="sd">		copies).</span>
+<span class="sd">		&quot;&quot;&quot;</span>
+		<span class="k">return</span> <span class="n">args</span>
+</div>
+<div class="viewcode-block" id="LazyDict"><a class="viewcode-back" href="../../dio.html#dio.lazydict.LazyDict">[docs]</a><span class="k">class</span> <span class="nc">LazyDict</span><span class="p">(</span><span class="nb">dict</span><span class="p">):</span>
+	<span class="sd">&quot;&quot;&quot;a dict with transparent, on-demand computation and optimizable memoization</span>
+
+<span class="sd">	See the module documentation for the general overview.</span>
+
+<span class="sd">	To implement a LazyDict, simply inherit from this base class and define the </span>
+<span class="sd">	class variable `extensions&#39;, a list of Extension instances.  The order </span>
+<span class="sd">	matters -- extensions are attempted roughly in order.  It&#39;s also extremely </span>
+<span class="sd">	good practice to document the expected keys and their value types in the </span>
+<span class="sd">	class doc.</span>
+
+<span class="sd">	__getattr__ and related methods will raise KeyError if the data is not </span>
+<span class="sd">	present, such as:</span>
+
+<span class="sd">		* the key(s) necessary to compute the values through extensions are not </span>
+<span class="sd">		  present</span>
+
+<span class="sd">		* there is no extension that computes the value for that key</span>
+
+<span class="sd">		* data extension is limited by the laziness setting</span>
+
+<span class="sd">	There are two `special&#39; keys:</span>
+
+<span class="sd">		_laziness: the laziness setting (see module doc)</span>
+
+<span class="sd">		_overwrite: the overwrite setting (see module doc)</span>
+
+<span class="sd">	Key values are never None -- that special value is used internally during </span>
+<span class="sd">	extension evaluation.  This might change, we&#39;ll see what problems we run </span>
+<span class="sd">	into...</span>
+<span class="sd">	&quot;&quot;&quot;</span>
+
+
+	<span class="c">#--- subclasses should set this</span>
+
+	<span class="n">extensions</span> <span class="o">=</span> <span class="p">[]</span>  <span class="c">#a list of Extension instances</span>
+
+
+	<span class="c">#--- internal telemetry</span>
+
+	<span class="n">_extension_count</span> <span class="o">=</span> <span class="mi">0</span>  <span class="c">#number of times extensions have been called</span>
+
+
+<div class="viewcode-block" id="LazyDict.has_key"><a class="viewcode-back" href="../../dio.html#dio.lazydict.LazyDict.has_key">[docs]</a>	<span class="k">def</span> <span class="nf">has_key</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">key</span><span class="p">):</span>
+		<span class="sd">&quot;&quot;&quot;dict&#39;s has_key, with transparent LazyDict semantics.</span>
+
+<span class="sd">		Note: has_key() is deprecated in Python; use the `in&#39; operator, i.e. </span>
+<span class="sd">		__contains__(), instead.</span>
+<span class="sd">		&quot;&quot;&quot;</span>
+		<span class="k">return</span> <span class="n">key</span> <span class="ow">in</span> <span class="bp">self</span>
+</div>
+	<span class="k">def</span> <span class="nf">__contains__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">key</span><span class="p">):</span>
+		<span class="sd">&quot;&quot;&quot;dict&#39;s __contains__, with transparent LazyDict semantics.&quot;&quot;&quot;</span>
+		<span class="k">try</span><span class="p">:</span>
+			<span class="bp">self</span><span class="p">[</span><span class="n">key</span><span class="p">]</span>
+		<span class="k">except</span> <span class="ne">KeyError</span><span class="p">:</span>
+			<span class="k">return</span> <span class="bp">False</span>
+		<span class="k">return</span> <span class="bp">True</span>
+	
+	<span class="k">def</span> <span class="nf">__getitem__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">key</span><span class="p">):</span>
+		<span class="sd">&quot;&quot;&quot;dict&#39;s __getitem__, with transparent LazyDict semantics.</span>
+
+<span class="sd">		Note that this is recursive, and there is no guarantee of termination.  </span>
+<span class="sd">		If extensions create loops, this may recurse infinitely.</span>
+
+<span class="sd">		This method itself is rather optimized for LAZINESS_QUERY_OPTIMIZED, as </span>
+<span class="sd">		it usually uses EAFP (try/except) over of LBYL (if/hasattr), which </span>
+<span class="sd">		assumes success will be more frequent than failure.</span>
+
+<span class="sd">		TODO:</span>
+<span class="sd">			* The code assumes no extensions set _laziness and _overwrite.  </span>
+<span class="sd">			  That should be supported, as it could be useful.</span>
+<span class="sd">		&quot;&quot;&quot;</span>
+
+		<span class="k">try</span><span class="p">:</span>
+			<span class="c">#EAFP -- hopefully we already have it, in which case just return it</span>
+			<span class="k">return</span> <span class="nb">dict</span><span class="o">.</span><span class="n">__getitem__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">key</span><span class="p">)</span>
+		<span class="k">except</span> <span class="ne">KeyError</span><span class="p">:</span>
+			<span class="k">if</span> <span class="nb">dict</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="s">&#39;_laziness&#39;</span><span class="p">,</span><span class="n">DEFAULT_LAZINESS</span><span class="p">)</span> <span class="o">==</span> <span class="n">LAZINESS_LOCKED</span><span class="p">:</span>
+				<span class="c">#if extending is not allowed, we don&#39;t have it, and we&#39;re done</span>
+				<span class="k">raise</span>
+			<span class="k">else</span><span class="p">:</span>
+				<span class="c">#try to compute it through extensions</span>
+
+				<span class="n">fulfilled</span> <span class="o">=</span> <span class="bp">False</span>  <span class="c">#if we&#39;ve satisfied the main request</span>
+				
+				<span class="n">e1</span> <span class="o">=</span> <span class="p">[]</span>  <span class="c">#candidate extensions where we already have all sources, w/o further extending</span>
+				         <span class="c">#try these first, since they are the most efficient, and to avoid infinite loops</span>
+				<span class="n">e2</span> <span class="o">=</span> <span class="p">[]</span>  <span class="c">#candidate extensions where one or more of the sources are only available through extension, if at all</span>
+				         <span class="c">#invoking these can cause recursion, which may be infinite</span>
+				
+				<span class="c">#sort the extensions into the above two categories (original order is preserved within a category)</span>
+				<span class="k">for</span> <span class="n">e</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">extensions</span><span class="p">:</span>
+					<span class="k">if</span> <span class="n">key</span> <span class="ow">in</span> <span class="n">e</span><span class="o">.</span><span class="n">target</span><span class="p">:</span>
+						<span class="k">if</span> <span class="nb">all</span><span class="p">([</span> <span class="p">(</span><span class="nb">dict</span><span class="o">.</span><span class="n">__contains__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">sk</span><span class="p">))</span> <span class="k">for</span> <span class="n">sk</span> <span class="ow">in</span> <span class="n">e</span><span class="o">.</span><span class="n">source</span> <span class="p">]):</span>  <span class="c">#using dict, so no extending, no recursion</span>
+							<span class="n">e1</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">e</span><span class="p">)</span>
+						<span class="k">else</span><span class="p">:</span>
+							<span class="n">e2</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">e</span><span class="p">)</span>
+
+				<span class="c">#try each candidate extension</span>
+				<span class="k">for</span> <span class="n">sources_known_present</span><span class="p">,</span> <span class="n">e</span> <span class="ow">in</span> <span class="n">chain</span><span class="p">(</span><span class="n">izip</span><span class="p">(</span><span class="n">repeat</span><span class="p">(</span><span class="bp">True</span><span class="p">),</span> <span class="n">e1</span><span class="p">),</span> <span class="n">izip</span><span class="p">(</span><span class="n">repeat</span><span class="p">(</span><span class="bp">False</span><span class="p">),</span> <span class="n">e2</span><span class="p">)):</span>
+					<span class="k">if</span> <span class="n">sources_known_present</span> <span class="ow">or</span> <span class="nb">all</span><span class="p">([</span> <span class="p">(</span><span class="n">sk</span> <span class="ow">in</span> <span class="bp">self</span><span class="p">)</span> <span class="k">for</span> <span class="n">sk</span> <span class="ow">in</span> <span class="n">e</span><span class="o">.</span><span class="n">source</span> <span class="p">]):</span>  <span class="c">#(sk in self) makes this recursive and allows for extension chaining</span>
+						<span class="c">#we have all the required source values; run the extension</span>
+						<span class="n">LazyDict</span><span class="o">.</span><span class="n">_extension_count</span> <span class="o">+=</span> <span class="mi">1</span>
+						<span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">izip</span><span class="p">(</span><span class="n">e</span><span class="o">.</span><span class="n">target</span><span class="p">,</span> <span class="n">e</span><span class="p">(</span><span class="o">*</span><span class="p">[</span> <span class="nb">dict</span><span class="o">.</span><span class="n">__getitem__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">sk</span><span class="p">)</span> <span class="k">for</span> <span class="n">sk</span> <span class="ow">in</span> <span class="n">e</span><span class="o">.</span><span class="n">source</span> <span class="p">])):</span>
+							<span class="k">if</span> <span class="n">v</span> <span class="ow">is</span> <span class="ow">not</span> <span class="bp">None</span><span class="p">:</span>
+								<span class="k">if</span> <span class="n">k</span> <span class="o">==</span> <span class="n">key</span><span class="p">:</span>
+									<span class="c">#this is the key we want -- store the value</span>
+									<span class="bp">self</span><span class="p">[</span><span class="n">k</span><span class="p">]</span> <span class="o">=</span> <span class="n">v</span>
+									<span class="n">fulfilled</span> <span class="o">=</span> <span class="bp">True</span>
+									<span class="k">if</span> <span class="nb">dict</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="s">&#39;_laziness&#39;</span><span class="p">,</span><span class="n">DEFAULT_LAZINESS</span><span class="p">)</span> <span class="o">==</span> <span class="n">LAZINESS_DATA_OPTIMIZED</span><span class="p">:</span>
+										<span class="c">#we have what we need and don&#39;t care about the rest of the target data</span>
+										<span class="k">break</span>
+								<span class="k">elif</span> <span class="nb">dict</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="s">&#39;_laziness&#39;</span><span class="p">,</span><span class="n">DEFAULT_LAZINESS</span><span class="p">)</span> <span class="o">==</span> <span class="n">LAZINESS_QUERY_OPTIMIZED</span><span class="p">:</span>
+									<span class="c">#this is not the key that we want, but store the value so we don&#39;t have to re-query</span>
+									<span class="c">#but only if it&#39;s not already there or the instance is configured to update existing data</span>
+									<span class="k">if</span> <span class="ow">not</span> <span class="nb">dict</span><span class="o">.</span><span class="n">__contains__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">k</span><span class="p">)</span> <span class="ow">or</span> <span class="nb">dict</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="s">&#39;_overwrite&#39;</span><span class="p">,</span><span class="n">DEFAULT_OVERWRITE</span><span class="p">)</span> <span class="o">==</span> <span class="n">OVERWRITE_UPDATE</span><span class="p">:</span>
+										<span class="bp">self</span><span class="p">[</span><span class="n">k</span><span class="p">]</span> <span class="o">=</span> <span class="n">v</span>
+					<span class="k">if</span> <span class="n">fulfilled</span><span class="p">:</span> <span class="k">break</span>
+				
+				<span class="k">return</span> <span class="nb">dict</span><span class="o">.</span><span class="n">__getitem__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">key</span><span class="p">)</span>  <span class="c">#(may still raise KeyError)</span></div>
+</pre></div>
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar">
+        <div class="sphinxsidebarwrapper">
+<div id="searchbox" style="display: none">
+  <h3>Quick search</h3>
+    <form class="search" action="../../search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li><a href="../../index.html">dio  documentation</a> &raquo;</li>
+          <li><a href="../index.html" >Module code</a> &raquo;</li>
+          <li><a href="../dio.html" >dio</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer">
+        &copy; Copyright 2014, John A. Brunelle.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.2.2.
+    </div>
+  </body>
+</html>

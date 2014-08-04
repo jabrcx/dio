@@ -1,0 +1,346 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>dio &mdash; dio  documentation</title>
+    
+    <link rel="stylesheet" href="../_static/default.css" type="text/css" />
+    <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../',
+        VERSION:     '',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="../_static/jquery.js"></script>
+    <script type="text/javascript" src="../_static/underscore.js"></script>
+    <script type="text/javascript" src="../_static/doctools.js"></script>
+    <link rel="top" title="dio  documentation" href="../index.html" />
+    <link rel="up" title="Module code" href="index.html" /> 
+  </head>
+  <body>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li><a href="../index.html">dio  documentation</a> &raquo;</li>
+          <li><a href="index.html" accesskey="U">Module code</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body">
+            
+  <h1>Source code for dio</h1><div class="highlight"><pre>
+<span class="c"># Copyright (c) 2014, John A. Brunelle</span>
+<span class="c"># All rights reserved.</span>
+
+<span class="sd">&quot;&quot;&quot;lazy dict-based i/o processing pipelines&quot;&quot;&quot;</span>
+
+
+<span class="kn">import</span> <span class="nn">sys</span><span class="o">,</span> <span class="nn">cPickle</span><span class="o">,</span> <span class="nn">functools</span>
+
+
+<span class="c">#--- decorators for the basic roles</span>
+
+<div class="viewcode-block" id="processor"><a class="viewcode-back" href="../dio.html#dio.processor">[docs]</a><span class="k">def</span> <span class="nf">processor</span><span class="p">(</span><span class="n">f</span><span class="p">):</span>
+	<span class="sd">&quot;&quot;&quot;Decorate a processing function.</span>
+
+<span class="sd">	This is for extended generator functions that get sent input and send</span>
+<span class="sd">	output.  This sets up its i/o and primes it such that it&#39;s ready to be sent</span>
+<span class="sd">	input.</span>
+<span class="sd">	&quot;&quot;&quot;</span>
+	<span class="nd">@functools.wraps</span><span class="p">(</span><span class="n">f</span><span class="p">)</span>  <span class="c">#(for __doc__)</span>
+	<span class="k">def</span> <span class="nf">primed_f</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">,</span><span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+		<span class="c">#set out and err to default values if not specified; this accomplishes</span>
+		<span class="c">#later binding than if they were simple defaults in the original</span>
+		<span class="c">#function definition; default_out/err won&#39;t be available for the</span>
+		<span class="c">#standard sink processors, since they are used to set default_out/err</span>
+		<span class="k">if</span> <span class="s">&#39;default_out&#39;</span> <span class="ow">in</span> <span class="nb">globals</span><span class="p">()</span> <span class="ow">and</span> <span class="s">&#39;default_err&#39;</span> <span class="ow">in</span> <span class="nb">globals</span><span class="p">():</span>
+			<span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">v</span> <span class="ow">in</span> <span class="p">((</span><span class="s">&#39;out&#39;</span><span class="p">,</span><span class="n">default_out</span><span class="p">),</span> <span class="p">(</span><span class="s">&#39;err&#39;</span><span class="p">,</span><span class="n">default_err</span><span class="p">)):</span>
+				<span class="k">if</span> <span class="n">k</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">kwargs</span> <span class="ow">or</span> <span class="n">kwargs</span><span class="p">[</span><span class="n">k</span><span class="p">]</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span>
+					<span class="n">kwargs</span><span class="p">[</span><span class="n">k</span><span class="p">]</span> <span class="o">=</span> <span class="n">v</span>
+
+		<span class="n">f2</span> <span class="o">=</span> <span class="n">f</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">,</span><span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+
+		<span class="c">#coroutine priming</span>
+		<span class="n">f2</span><span class="o">.</span><span class="n">next</span><span class="p">()</span>
+
+		<span class="k">return</span> <span class="n">f2</span>
+	<span class="k">return</span> <span class="n">primed_f</span>
+</div>
+<div class="viewcode-block" id="restart_on_error"><a class="viewcode-back" href="../dio.html#dio.restart_on_error">[docs]</a><span class="k">def</span> <span class="nf">restart_on_error</span><span class="p">(</span><span class="n">f</span><span class="p">):</span>
+	<span class="sd">&quot;&quot;&quot;Decorate a processing function so that it&#39;s restarted upon any errors.</span>
+
+<span class="sd">	Ideally, it would *continue* on error, but you can&#39;t resume a generator</span>
+<span class="sd">	after it&#39;s raised an exception.  Therefore this restarts a new instance of</span>
+<span class="sd">	the generator.</span>
+
+<span class="sd">	This @restart_on_error decorator should be applied *before* (i.e. on a</span>
+<span class="sd">	lower line) than the @processor decorator.</span>
+<span class="sd">	&quot;&quot;&quot;</span>
+	<span class="k">def</span> <span class="nf">restarter</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+		<span class="k">while</span> <span class="bp">True</span><span class="p">:</span>
+			<span class="k">try</span><span class="p">:</span>
+				<span class="n">f2</span> <span class="o">=</span> <span class="n">f</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+				<span class="n">f2</span><span class="o">.</span><span class="n">next</span><span class="p">()</span>
+				<span class="k">while</span> <span class="bp">True</span><span class="p">:</span>
+					<span class="n">d</span> <span class="o">=</span> <span class="k">yield</span>
+					<span class="n">f2</span><span class="o">.</span><span class="n">send</span><span class="p">(</span><span class="n">d</span><span class="p">)</span>
+			<span class="k">except</span> <span class="ne">Exception</span><span class="p">,</span> <span class="n">e</span><span class="p">:</span>
+				<span class="c">#(GeneratorExit is not an Exception, just BaseException)</span>
+				<span class="n">kwargs</span><span class="p">[</span><span class="s">&#39;err&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">send</span><span class="p">(</span><span class="n">e2d</span><span class="p">(</span><span class="n">e</span><span class="p">))</span>
+	<span class="k">return</span> <span class="n">restarter</span>
+
+
+<span class="c">#--- exception handling</span>
+</div>
+<div class="viewcode-block" id="e2d"><a class="viewcode-back" href="../dio.html#dio.e2d">[docs]</a><span class="k">def</span> <span class="nf">e2d</span><span class="p">(</span><span class="n">e</span><span class="p">):</span>
+	<span class="sd">&quot;&quot;&quot;Convert an Exception to a LazyDict.</span>
+
+<span class="sd">	#FIXME this needs a lot of work -- it&#39;s really just a placeholder for now.</span>
+<span class="sd">	&quot;&quot;&quot;</span>
+	<span class="k">return</span> <span class="p">{</span><span class="s">&#39;message&#39;</span><span class="p">:</span> <span class="n">e</span><span class="o">.</span><span class="n">message</span><span class="p">}</span>
+
+
+<span class="c">#--- sources</span>
+
+<span class="c">#Sources are not normal processors (i.e. are not coroutines) since they don&#39;t</span>
+<span class="c">#get sent data.  (Faking it by including an unreachable yield won&#39;t work since</span>
+<span class="c">#the standard @processor priming will fully run them, raising StopIteration.)</span>
+</div>
+<div class="viewcode-block" id="source"><a class="viewcode-back" href="../dio.html#dio.source">[docs]</a><span class="k">def</span> <span class="nf">source</span><span class="p">(</span><span class="n">iterable</span><span class="p">,</span> <span class="n">out</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">err</span><span class="o">=</span><span class="bp">None</span><span class="p">):</span>
+	<span class="sd">&quot;&quot;&quot;Turn any iterable into a source to start a processing pipeline.&quot;&quot;&quot;</span>
+
+	<span class="c">#set default i/o, since this is not taken care of by a decorator</span>
+	<span class="k">global</span> <span class="n">default_out</span>
+	<span class="k">if</span> <span class="n">out</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span> <span class="n">out</span> <span class="o">=</span> <span class="n">default_out</span>
+	<span class="k">global</span> <span class="n">default_err</span>
+	<span class="k">if</span> <span class="n">err</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span> <span class="n">err</span> <span class="o">=</span> <span class="n">default_err</span>
+
+	<span class="c">#send each</span>
+	<span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="n">iterable</span><span class="p">:</span>
+		<span class="n">out</span><span class="o">.</span><span class="n">send</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
+
+
+<span class="c">#--- standard sinks</span>
+
+<span class="c">#though these have the form of standard processors, out and err should be</span>
+<span class="c">#file-like objects, not other processors.</span>
+
+<span class="c">#print</span></div>
+<span class="nd">@processor</span>
+<div class="viewcode-block" id="out_printer"><a class="viewcode-back" href="../dio.html#dio.out_printer">[docs]</a><span class="k">def</span> <span class="nf">out_printer</span><span class="p">(</span><span class="n">out</span><span class="o">=</span><span class="n">sys</span><span class="o">.</span><span class="n">stdout</span><span class="p">,</span> <span class="n">err</span><span class="o">=</span><span class="bp">None</span><span class="p">):</span>
+	<span class="k">while</span> <span class="bp">True</span><span class="p">:</span>
+		<span class="n">d</span> <span class="o">=</span> <span class="k">yield</span>
+		<span class="n">out</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">d</span><span class="p">))</span>
+		<span class="n">out</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="s">&#39;</span><span class="se">\n</span><span class="s">&#39;</span><span class="p">)</span></div>
+<span class="nd">@processor</span>
+<div class="viewcode-block" id="err_printer"><a class="viewcode-back" href="../dio.html#dio.err_printer">[docs]</a><span class="k">def</span> <span class="nf">err_printer</span><span class="p">(</span><span class="n">out</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">err</span><span class="o">=</span><span class="n">sys</span><span class="o">.</span><span class="n">stderr</span><span class="p">):</span>
+	<span class="k">while</span> <span class="bp">True</span><span class="p">:</span>
+		<span class="n">d</span> <span class="o">=</span> <span class="k">yield</span>
+		<span class="n">err</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">d</span><span class="p">))</span>
+		<span class="n">err</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="s">&#39;</span><span class="se">\n</span><span class="s">&#39;</span><span class="p">)</span>
+
+<span class="c">#accumulate</span></div>
+<span class="n">accumulated_out</span> <span class="o">=</span> <span class="p">[]</span>
+<span class="nd">@processor</span>
+<div class="viewcode-block" id="out_accumulator"><a class="viewcode-back" href="../dio.html#dio.out_accumulator">[docs]</a><span class="k">def</span> <span class="nf">out_accumulator</span><span class="p">(</span><span class="n">out</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">err</span><span class="o">=</span><span class="bp">None</span><span class="p">):</span>
+	<span class="k">global</span> <span class="n">accumulated_out</span>
+	<span class="k">while</span> <span class="bp">True</span><span class="p">:</span>
+		<span class="n">d</span> <span class="o">=</span> <span class="k">yield</span>
+		<span class="n">accumulated_out</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">d</span><span class="p">)</span></div>
+<span class="n">accumulated_err</span> <span class="o">=</span> <span class="p">[]</span>
+<span class="nd">@processor</span>
+<div class="viewcode-block" id="err_accumulator"><a class="viewcode-back" href="../dio.html#dio.err_accumulator">[docs]</a><span class="k">def</span> <span class="nf">err_accumulator</span><span class="p">(</span><span class="n">out</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">err</span><span class="o">=</span><span class="bp">None</span><span class="p">):</span>
+	<span class="k">global</span> <span class="n">accumulated_err</span>
+	<span class="k">while</span> <span class="bp">True</span><span class="p">:</span>
+		<span class="n">d</span> <span class="o">=</span> <span class="k">yield</span>
+		<span class="n">accumulated_err</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">d</span><span class="p">)</span>
+
+
+<span class="c">#--- serialization</span>
+
+<span class="c">#to/from stdout/stdin w/ pickle</span></div>
+<div class="viewcode-block" id="in_pickle"><a class="viewcode-back" href="../dio.html#dio.in_pickle">[docs]</a><span class="k">def</span> <span class="nf">in_pickle</span><span class="p">(</span><span class="n">inn</span><span class="o">=</span><span class="n">sys</span><span class="o">.</span><span class="n">stdin</span><span class="p">,</span> <span class="n">out</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">err</span><span class="o">=</span><span class="bp">None</span><span class="p">):</span>
+	<span class="c">#set default i/o, since this is not taken care of by a decorator</span>
+	<span class="k">global</span> <span class="n">default_out</span>
+	<span class="k">if</span> <span class="n">out</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span> <span class="n">out</span> <span class="o">=</span> <span class="n">default_out</span>
+	<span class="k">global</span> <span class="n">default_err</span>
+	<span class="k">if</span> <span class="n">err</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span> <span class="n">err</span> <span class="o">=</span> <span class="n">default_err</span>
+
+	<span class="c">#send each</span>
+	<span class="k">while</span> <span class="bp">True</span><span class="p">:</span>
+		<span class="k">try</span><span class="p">:</span>
+			<span class="n">out</span><span class="o">.</span><span class="n">send</span><span class="p">(</span><span class="n">cPickle</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="n">inn</span><span class="p">))</span>
+		<span class="k">except</span> <span class="ne">EOFError</span><span class="p">:</span>
+			<span class="k">break</span></div>
+<span class="nd">@processor</span>
+<div class="viewcode-block" id="out_pickle"><a class="viewcode-back" href="../dio.html#dio.out_pickle">[docs]</a><span class="k">def</span> <span class="nf">out_pickle</span><span class="p">(</span><span class="n">out</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">err</span><span class="o">=</span><span class="bp">None</span><span class="p">):</span>
+	<span class="sd">&quot;&quot;&quot;like other sinks, out and err should be file-like objects&quot;&quot;&quot;</span>
+	<span class="k">while</span> <span class="bp">True</span><span class="p">:</span>
+		<span class="n">d</span> <span class="o">=</span> <span class="k">yield</span>
+		<span class="n">cPickle</span><span class="o">.</span><span class="n">dump</span><span class="p">(</span><span class="n">d</span><span class="p">,</span> <span class="n">out</span><span class="p">)</span>
+
+<span class="c">#to/from stdout/stdin w/ json</span></div>
+<span class="kn">import</span> <span class="nn">json</span>
+<div class="viewcode-block" id="in_json"><a class="viewcode-back" href="../dio.html#dio.in_json">[docs]</a><span class="k">def</span> <span class="nf">in_json</span><span class="p">(</span><span class="n">inn</span><span class="o">=</span><span class="n">sys</span><span class="o">.</span><span class="n">stdin</span><span class="p">,</span> <span class="n">out</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">err</span><span class="o">=</span><span class="bp">None</span><span class="p">):</span>
+	<span class="c">#set default i/o, since this is not taken care of by a decorator</span>
+	<span class="k">global</span> <span class="n">default_out</span>
+	<span class="k">if</span> <span class="n">out</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span> <span class="n">out</span> <span class="o">=</span> <span class="n">default_out</span>
+	<span class="k">global</span> <span class="n">default_err</span>
+	<span class="k">if</span> <span class="n">err</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span> <span class="n">err</span> <span class="o">=</span> <span class="n">default_err</span>
+
+	<span class="c">#send each</span>
+	<span class="k">for</span> <span class="n">line</span> <span class="ow">in</span> <span class="n">inn</span><span class="o">.</span><span class="n">readlines</span><span class="p">():</span>
+		<span class="k">try</span><span class="p">:</span>
+			<span class="n">out</span><span class="o">.</span><span class="n">send</span><span class="p">(</span><span class="n">json</span><span class="o">.</span><span class="n">loads</span><span class="p">(</span><span class="n">line</span><span class="p">))</span>
+		<span class="k">except</span> <span class="ne">ValueError</span><span class="p">:</span>
+			<span class="k">if</span> <span class="n">line</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span><span class="o">!=</span><span class="s">&#39;&#39;</span><span class="p">:</span>
+				<span class="k">raise</span></div>
+<span class="nd">@processor</span>
+<div class="viewcode-block" id="out_json"><a class="viewcode-back" href="../dio.html#dio.out_json">[docs]</a><span class="k">def</span> <span class="nf">out_json</span><span class="p">(</span><span class="n">out</span><span class="o">=</span><span class="n">sys</span><span class="o">.</span><span class="n">stdout</span><span class="p">,</span> <span class="n">err</span><span class="o">=</span><span class="bp">None</span><span class="p">):</span>
+	<span class="sd">&quot;&quot;&quot;like other sinks, out and err should be file-like objects&quot;&quot;&quot;</span>
+	<span class="k">while</span> <span class="bp">True</span><span class="p">:</span>
+		<span class="n">d</span> <span class="o">=</span> <span class="k">yield</span>
+		<span class="n">json</span><span class="o">.</span><span class="n">dump</span><span class="p">(</span><span class="n">d</span><span class="p">,</span> <span class="n">out</span><span class="p">)</span>
+		<span class="n">out</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="s">&#39;</span><span class="se">\n</span><span class="s">&#39;</span><span class="p">)</span>
+
+
+<span class="c">#--- default i/o</span>
+
+<span class="c">#the default output and error sinks</span>
+<span class="c">#these are intended to be changed, if desired, at the beginning of a pipeline</span></div>
+<span class="n">default_in</span> <span class="o">=</span> <span class="n">in_json</span>
+<span class="n">default_out</span> <span class="o">=</span> <span class="n">out_json</span><span class="p">(</span><span class="n">out</span><span class="o">=</span><span class="n">sys</span><span class="o">.</span><span class="n">stdout</span><span class="p">)</span>
+<span class="n">default_err</span> <span class="o">=</span> <span class="n">out_json</span><span class="p">(</span><span class="n">out</span><span class="o">=</span><span class="n">sys</span><span class="o">.</span><span class="n">stderr</span><span class="p">)</span>
+
+
+<span class="c">#--- cli</span>
+
+<div class="viewcode-block" id="cli"><a class="viewcode-back" href="../dio.html#dio.cli">[docs]</a><span class="k">def</span> <span class="nf">cli</span><span class="p">(</span><span class="n">p</span><span class="p">):</span>
+	<span class="sd">&quot;&quot;&quot;Run any processor as a standalone cli instance in a shell pipeline.&quot;&quot;&quot;</span>
+	<span class="n">default_in</span><span class="p">(</span><span class="n">out</span><span class="o">=</span><span class="n">p</span><span class="p">())</span>
+
+
+<span class="c">#--- common constructs</span>
+</div>
+<span class="nd">@processor</span>
+<div class="viewcode-block" id="identity"><a class="viewcode-back" href="../dio.html#dio.identity">[docs]</a><span class="k">def</span> <span class="nf">identity</span><span class="p">(</span><span class="n">out</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">err</span><span class="o">=</span><span class="bp">None</span><span class="p">):</span>
+	<span class="sd">&quot;&quot;&quot;Output all input dicts.&quot;&quot;&quot;</span>
+	<span class="k">while</span> <span class="bp">True</span><span class="p">:</span>
+		<span class="n">d</span> <span class="o">=</span> <span class="k">yield</span>
+		<span class="n">out</span><span class="o">.</span><span class="n">send</span><span class="p">(</span><span class="n">d</span><span class="p">)</span>
+
+</div>
+<span class="nd">@processor</span>
+<div class="viewcode-block" id="filter"><a class="viewcode-back" href="../dio.html#dio.filter">[docs]</a><span class="k">def</span> <span class="nf">filter</span><span class="p">(</span><span class="n">f</span><span class="p">,</span> <span class="n">out</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">err</span><span class="o">=</span><span class="bp">None</span><span class="p">):</span>
+	<span class="sd">&quot;&quot;&quot;Output input dicts iff f(d) is True.&quot;&quot;&quot;</span>
+	<span class="k">while</span> <span class="bp">True</span><span class="p">:</span>
+		<span class="n">d</span> <span class="o">=</span> <span class="k">yield</span>
+		<span class="k">try</span><span class="p">:</span>
+			<span class="k">if</span> <span class="n">f</span><span class="p">(</span><span class="n">d</span><span class="p">):</span> <span class="n">out</span><span class="o">.</span><span class="n">send</span><span class="p">(</span><span class="n">d</span><span class="p">)</span>
+		<span class="k">except</span> <span class="ne">Exception</span><span class="p">,</span> <span class="n">e</span><span class="p">:</span>
+			<span class="n">err</span><span class="o">.</span><span class="n">send</span><span class="p">({</span><span class="s">&#39;error&#39;</span><span class="p">:</span><span class="nb">str</span><span class="p">(</span><span class="n">e</span><span class="p">)})</span>
+
+</div>
+<span class="nd">@processor</span>
+<div class="viewcode-block" id="apply"><a class="viewcode-back" href="../dio.html#dio.apply">[docs]</a><span class="k">def</span> <span class="nf">apply</span><span class="p">(</span><span class="n">f</span><span class="p">,</span> <span class="n">out</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">err</span><span class="o">=</span><span class="bp">None</span><span class="p">):</span>
+	<span class="sd">&quot;&quot;&quot;For each sent d, send all f(d).</span>
+
+<span class="sd">	:param f: a callable that accepts a single input dict and yields zero or</span>
+<span class="sd">		more output dicts.</span>
+
+<span class="sd">	.. note::</span>
+<span class="sd">		this overwrites the built-in `apply&#39;, but that&#39;s been deprecated since</span>
+<span class="sd">		2.3.</span>
+<span class="sd">	&quot;&quot;&quot;</span>
+	<span class="k">while</span> <span class="bp">True</span><span class="p">:</span>
+		<span class="n">d</span> <span class="o">=</span> <span class="k">yield</span>
+		<span class="k">try</span><span class="p">:</span>
+			<span class="k">for</span> <span class="n">d2</span> <span class="ow">in</span> <span class="n">f</span><span class="p">(</span><span class="n">d</span><span class="p">):</span>
+				<span class="n">out</span><span class="o">.</span><span class="n">send</span><span class="p">(</span><span class="n">d2</span><span class="p">)</span>
+		<span class="k">except</span> <span class="ne">Exception</span><span class="p">,</span> <span class="n">e</span><span class="p">:</span>
+			<span class="n">err</span><span class="o">.</span><span class="n">send</span><span class="p">({</span><span class="s">&#39;error&#39;</span><span class="p">:</span><span class="nb">str</span><span class="p">(</span><span class="n">e</span><span class="p">)})</span>
+
+
+<span class="c">#--- coreutils</span>
+</div>
+<span class="nd">@processor</span>
+<div class="viewcode-block" id="uniq"><a class="viewcode-back" href="../dio.html#dio.uniq">[docs]</a><span class="k">def</span> <span class="nf">uniq</span><span class="p">(</span><span class="n">out</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">err</span><span class="o">=</span><span class="bp">None</span><span class="p">):</span>
+	<span class="sd">&quot;&quot;&quot;The dio equivalent of coreutils&#39; uniq.&quot;&quot;&quot;</span>
+	<span class="n">prev</span> <span class="o">=</span> <span class="bp">None</span>
+	<span class="k">while</span> <span class="bp">True</span><span class="p">:</span>
+		<span class="n">d</span> <span class="o">=</span> <span class="k">yield</span>
+		<span class="k">if</span> <span class="n">d</span><span class="o">!=</span><span class="n">prev</span><span class="p">:</span>  <span class="c">#(always True the first time, when prev is None)</span>
+			<span class="n">out</span><span class="o">.</span><span class="n">send</span><span class="p">(</span><span class="n">d</span><span class="p">)</span>
+		<span class="n">prev</span> <span class="o">=</span> <span class="n">d</span>
+</div>
+<span class="nd">@processor</span>
+<div class="viewcode-block" id="count"><a class="viewcode-back" href="../dio.html#dio.count">[docs]</a><span class="k">def</span> <span class="nf">count</span><span class="p">(</span><span class="n">out</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">err</span><span class="o">=</span><span class="bp">None</span><span class="p">):</span>
+	<span class="sd">&quot;&quot;&quot;The dio processor analogous of coreutils&#39; wc.&quot;&quot;&quot;</span>
+	<span class="n">count</span> <span class="o">=</span> <span class="mi">0</span>
+	<span class="k">try</span><span class="p">:</span>
+		<span class="k">while</span> <span class="bp">True</span><span class="p">:</span>
+			<span class="n">d</span> <span class="o">=</span> <span class="k">yield</span>
+			<span class="n">count</span> <span class="o">+=</span> <span class="mi">1</span>
+	<span class="k">except</span> <span class="ne">GeneratorExit</span><span class="p">:</span>
+		<span class="n">out</span><span class="o">.</span><span class="n">send</span><span class="p">({</span><span class="s">&quot;count&quot;</span><span class="p">:</span><span class="n">count</span><span class="p">})</span></div>
+</pre></div>
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar">
+        <div class="sphinxsidebarwrapper">
+<div id="searchbox" style="display: none">
+  <h3>Quick search</h3>
+    <form class="search" action="../search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li><a href="../index.html">dio  documentation</a> &raquo;</li>
+          <li><a href="index.html" >Module code</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer">
+        &copy; Copyright 2014, John A. Brunelle.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.2.2.
+    </div>
+  </body>
+</html>
