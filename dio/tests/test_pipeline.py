@@ -118,10 +118,10 @@ class ProcessorTestCase(unittest.TestCase):
 	def test_restart_on_error_in_pipeline(self):
 		"""Make sure a restart-on-error processor does not restart others.
 
-		An example of something that has state is dio.count.  This tests sends
-		the output of a restart-on-error processor (that also produces errors)
-		to dio.count and ensure there is one total count rather than two
-		separate partial counts.
+		An example of something that has state is dio.wc.  This tests sends the
+		output of a restart-on-error processor (that also produces errors) to 
+		dio.wc and ensure there is one total count rather than two separate 
+		partial counts.
 		"""
 
 		#--- a processor that fails on every other (even) inputs
@@ -142,7 +142,7 @@ class ProcessorTestCase(unittest.TestCase):
 
 		dio.source(({"name":"a"}, {"name":"b"}, {"name":"c"}),
 			out=every_other_fails(
-				out=dio.count()
+				out=dio.wc()
 			)
 		)
 
@@ -269,13 +269,13 @@ class ProcessorTestCase(unittest.TestCase):
 			"uniq did not yield the proper number of output dicts; expected %d, got %s" % (l_want, l_got)
 		)
 
-	def test_count(self):
-		"""Test dio.count."""
+	def test_wc(self):
+		"""Test dio.wc."""
 
 		#--- run it
 
 		dio.source(({"name":"foo"}, {"name":"foo"}, {"name":"bar"}),
-			out=dio.count()
+			out=dio.wc()
 		)
 
 

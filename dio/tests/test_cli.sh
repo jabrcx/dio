@@ -3,17 +3,71 @@
 # Copyright (c) 2014, John A. Brunelle
 # All rights reserved.
 
-input_foo_foo_bar='
-{"name":"foo"}
-{"name":"foo"}
-{"name":"bar"}
-'
-
-echo "$input_foo_foo_bar" | dio.identity
+echo "test dio.identity"
+echo '
+{"name": "foo"}
+{"name": "foo"}
+{"name": "bar"}
+' | dio.identity
 #{"name": "foo"}
 #{"name": "foo"}
 #{"name": "bar"}
 
-echo "$input_foo_foo_bar" | dio.uniq
+
+#--- coreutils
+
+echo "test dio.sort"
+echo '
+{"foo": 3}
+{"bar": 5}
+{"zzz": 1}
+' | dio.sort
+#{"zzz": 1}
+#{"foo": 3}
+#{"bar": 5}
+
+echo "test dio.uniq"
+echo '
+{"name": "foo"}
+{"name": "foo"}
+{"name": "bar"}
+' | dio.uniq
 #{"name": "foo"}
 #{"name": "bar"}
+
+echo "test dio.wc"
+echo '
+{"name": "foo"}
+{"name": "foo"}
+{"name": "bar"}
+' | dio.wc
+#{"count": 3}
+
+
+#--- math
+
+echo "test dio.count"
+echo '
+{"foo": 1}
+{"bar": 2}
+{"zzz": 3}
+{"foo": 4}
+{"bar": 5}
+{"foo": 6}
+' | dio.count | dio.sort  #need to sort to make output surely deterministic
+#{"zzz": 1}
+#{"bar": 2}
+#{"foo": 3}
+
+echo "test dio.sum"
+echo '
+{"foo": 1}
+{"bar": 2}
+{"zzz": 3}
+{"foo": 4}
+{"bar": 5}
+{"foo": 6}
+' | dio.sum | dio.sort  #need to sort to make output surely deterministic
+#{"zzz": 3}
+#{"bar": 7}
+#{"foo": 11}

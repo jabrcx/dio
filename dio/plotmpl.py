@@ -11,7 +11,7 @@ def pie(out=None, err=None):
 
 	#settings
 	figsize = (5,5)  #(w,h) in inches
-	threshold_percentage = 4  #None or a number in the range (0,100)
+	threshold_percentage = None  #None or a number in the range (0,100)
 	other_label = 'OTHER'  #applicable iff threshold_percentage is not None
 
 	#the data accumulator
@@ -61,7 +61,7 @@ def pie(out=None, err=None):
 				return '%d%%' % (x + 0.5)
 
 			#convert to mpl's format
-			labels, values = zip(*sorted(pie.items(), piecmp))
+			labels, values = zip(*sorted(pie.iteritems(), piecmp))
 
 			#actual plotting
 			#see: http://matplotlib.org/api/pyplot_api.html#matplotlib.pyplot.pie
