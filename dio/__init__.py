@@ -210,7 +210,56 @@ def apply(f, out=None, err=None):
 			err.send({'error':str(e)})
 
 
+#--- common reducers
+
+def math(op):
+	@functools.wraps(op)  #(for __doc__)
+	def p(out=None, err=None):
+		result = {}
+		try:
+			while True:
+				d = yield
+				for k, v in d.iteritems():
+					try:
+						result[k] = op(result.get(k), v)
+					except KeyError:
+						result[k] = 1
+		except GeneratorExit:
+			for i in result.items():
+				out.send(dict((i,)))
+
+	return p
+
+@processor
+@math
+def count(x, v):
+	"""Count appearences of each key."""
+	return x + 1 if x is not None else 1
+
+@processor
+@math
+def sum_(x, v):
+	"""Sum values for each key."""
+	return x + v if x is not None else v
+
+
 #--- coreutils
+
+@processor
+def sort(out=None, err=None):
+	"""Sort by value.
+
+	Assumes each input is a one-item dict.
+	"""
+	result = []
+	try:
+		while True:
+			d = yield
+			result.append(d)
+	except GeneratorExit:
+		result.sort(key=lambda d: d.itervalues().next())
+		for d in result:
+			out.send(d)
 
 @processor
 def uniq(out=None, err=None):
@@ -223,7 +272,7 @@ def uniq(out=None, err=None):
 		prev = d
 
 @processor
-def count(out=None, err=None):
+def wc(out=None, err=None):
 	"""The dio processor analogous to coreutils' wc."""
 	count = 0
 	try:
