@@ -4,24 +4,36 @@
 """lazy dict-based i/o processing pipelines"""
 
 
-import sys, cPickle, functools
+import sys, types, functools
 
 
 #--- decorators for the basic roles
 
 def processor(f):
-	"""Decorate a processing function.
+	"""Turn a processing function into a pipline participator.
 
-	This is for extended generator functions that get sent input and send
-	output.  This sets up its i/o and primes it such that it's ready to be sent
-	input.
+	This serves two purposes:
+
+	1) This assigns out and err, which all processors must expose as keyword
+	   arguments, to the global default instances if no other value has been
+	   given.  This accomplishes later binding than if they were ordinary
+	   defaults in the original function definitions.
+
+	2) Most processors are coroutines (extended generators) that get sent
+	   input.  If f is a coroutine, this primes the coroutine so that it runs
+	   until its first yield and is ready to get sent real input; this returns
+	   the coroutine (generator object) for further use.
+
+	   This is irrelevant for sources -- plain functions that don't get sent
+	   any input.  In that case, calling the decorated function calls the
+	   original function, which fully executes it, and there is nothing left to
+	   use (this returns None).
 	"""
 	@functools.wraps(f)  #(for __doc__)
 	def primed_f(*args,**kwargs):
-		#set out and err to default values if not specified; this accomplishes
-		#later binding than if they were simple defaults in the original
-		#function definition; default_out/err won't be available for the
-		#standard sink processors, since they are used to set default_out/err
+		#set out and err to default values if not specified; default_out/err
+		#won't be available for the standard sink processors, since they are
+		#used to set default_out/err
 		if 'default_out' in globals() and 'default_err' in globals():
 			for k, v in (('out',default_out), ('err',default_err)):
 				if k not in kwargs or kwargs[k] is None:
@@ -30,9 +42,10 @@ def processor(f):
 		f2 = f(*args,**kwargs)
 
 		#coroutine priming
-		f2.next()
+		if isinstance(f2, types.GeneratorType):
+			f2.send(None)
+			return f2
 
-		return f2
 	return primed_f
 
 def restart_on_error(f):
@@ -71,115 +84,82 @@ def e2d(e):
 
 #--- sources
 
-#Sources are not normal processors (i.e. are not coroutines) since they don't
-#get sent data.  (Faking it by including an unreachable yield won't work since
-#the standard @processor priming will fully run them, raising StopIteration.)
-
+@processor
 def source(iterable, out=None, err=None):
 	"""Turn any iterable into a source to start a processing pipeline."""
-
-	#set default i/o, since this is not taken care of by a decorator
-	global default_out
-	if out is None: out = default_out
-	global default_err
-	if err is None: err = default_err
-
-	#send each
-	for x in iterable:
-		out.send(x)
+	for d in iterable:
+		out.send(d)
 
 
-#--- standard sinks
+#--- standard i/o
 
 #though these have the form of standard processors, out and err should be
 #file-like objects, not other processors.
 
-#print
+#repr/eval (file-like)
+import ast
 @processor
-def out_printer(out=sys.stdout, err=None):
+def repr_in(inn=None, out=None, err=None):
+	for line in inn:
+		out.send(ast.literal_eval(line))
+@processor
+def repr_out(out=None, err=None):
 	while True:
 		d = yield
-		out.write(str(d))
-		out.write('\n')
+		out.write(repr(d)+'\n')
+
+#pickle (file-like)
+import cPickle
 @processor
-def err_printer(out=None, err=sys.stderr):
-	while True:
-		d = yield
-		err.write(str(d))
-		err.write('\n')
-
-#accumulate
-accumulated_out = []
-@processor
-def out_accumulator(out=None, err=None):
-	global accumulated_out
-	while True:
-		d = yield
-		accumulated_out.append(d)
-accumulated_err = []
-@processor
-def err_accumulator(out=None, err=None):
-	global accumulated_err
-	while True:
-		d = yield
-		accumulated_err.append(d)
-
-
-#--- serialization
-
-#to/from stdout/stdin w/ pickle
-def in_pickle(inn=sys.stdin, out=None, err=None):
-	#set default i/o, since this is not taken care of by a decorator
-	global default_out
-	if out is None: out = default_out
-	global default_err
-	if err is None: err = default_err
-
-	#send each
+def pickle_in(inn=None, out=None, err=None):
 	while True:
 		try:
 			out.send(cPickle.load(inn))
 		except EOFError:
 			break
 @processor
-def out_pickle(out=None, err=None):
+def pickle_out(out=None, err=None):
 	"""like other sinks, out and err should be file-like objects"""
 	while True:
 		d = yield
 		cPickle.dump(d, out)
 
-#to/from stdout/stdin w/ json
+#json (file-like)
 import json
-def in_json(inn=sys.stdin, out=None, err=None):
-	#set default i/o, since this is not taken care of by a decorator
-	global default_out
-	if out is None: out = default_out
-	global default_err
-	if err is None: err = default_err
-
-	#send each
-	for line in inn.readlines():
+@processor
+def json_in(inn=sys.stdin, out=None, err=None):
+	for line in inn:
 		try:
 			out.send(json.loads(line))
 		except ValueError:
 			if line.strip()!='':
 				raise
 @processor
-def out_json(out=sys.stdout, err=None):
+def json_out(out=None, err=None):
 	"""like other sinks, out and err should be file-like objects"""
 	while True:
 		d = yield
 		json.dump(d, out)
 		out.write('\n')
 
+#buffers (iterable/appendable)
+@processor
+def buffer_in(inn=None, out=None, err=None):
+	global buffer
+	for d in inn:
+		out.send(d)
+@processor
+def buffer_out(out=None, err=None):
+	global buffer
+	while True:
+		d = yield
+		out.append(d)
 
-#--- default i/o
-
-#the default output and error sinks
+#--- default i/o source and sinks
 #these are intended to be changed, if desired, at the beginning of a pipeline
-default_in = in_json
-default_out = out_json(out=sys.stdout)
-default_err = out_json(out=sys.stderr)
+default_in = json_in
+default_out = json_out(out=sys.stdout)
+default_err = json_out(out=sys.stderr)
 
 
 #--- cli

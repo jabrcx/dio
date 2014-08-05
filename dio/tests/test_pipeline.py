@@ -11,12 +11,12 @@ import dio
 class ProcessorTestCase(unittest.TestCase):
 	def setUp(self):
 		"""Send out/err to inspectable accumulators rather than the screen."""
+		self.out = []
+		self.err = []
 
-		dio.default_out = dio.out_accumulator()
-		dio.default_err = dio.err_accumulator()
+		dio.default_out = dio.buffer_out(out=self.out)
+		dio.default_err = dio.buffer_out(out=self.err)
 
-		dio.accumulated_out = []
-		dio.accumulated_err = []
 
 	def test_pipeline_out_err(self):
 		"""Test basic pipeline functionality, including out/err."""
@@ -63,7 +63,7 @@ class ProcessorTestCase(unittest.TestCase):
 		#--- inspect output
 
 		self.assertEqual(
-			dio.accumulated_out,
+			self.out,
 			[
 				{'letter': 'x'},
 				{'letter': 'y'},
@@ -71,7 +71,7 @@ class ProcessorTestCase(unittest.TestCase):
 			"unexpected out"
 		)
 		self.assertEqual(
-			dio.accumulated_err,
+			self.err,
 			[
 				{'error': 'test error message for e'},
 				{'error': 'test error message for z'},
@@ -107,12 +107,12 @@ class ProcessorTestCase(unittest.TestCase):
 
 		#the first and third should be in out
 		l_want = 2
-		l_got = len(dio.accumulated_out)
+		l_got = len(self.out)
 		self.assertEqual(l_want, l_got)
 
 		#the second should've generated an entry in err
 		l_want = 1
-		l_got = len(dio.accumulated_err)
+		l_got = len(self.err)
 		self.assertEqual(l_want, l_got)
 
 	def test_restart_on_error_in_pipeline(self):
@@ -151,9 +151,9 @@ class ProcessorTestCase(unittest.TestCase):
 
 		expected_count = 2
 
-		self.assertEqual(len(dio.accumulated_out), 1)
+		self.assertEqual(len(self.out), 1)
 		self.assertEqual(
-			dio.accumulated_out[0]["count"],
+			self.out[0]["count"],
 			expected_count
 		)
 
@@ -169,27 +169,27 @@ class ProcessorTestCase(unittest.TestCase):
 
 		#run the serialization
 		dio.source(({'foo':'bar'}, {'x':42}),
-			out=dio.out_pickle(out=fout)
+			out=dio.pickle_out(out=fout)
 		)
 
 		#set stdin to be the string we wrote
 		fin = cStringIO.StringIO(fout.getvalue())
 
 		#run the deserialization
-		dio.in_pickle(inn=fin)
+		dio.pickle_in(inn=fin)
 
 
 		#--- inspect output
 
 		self.assertEqual(
-			dio.accumulated_out,
+			self.out,
 			[
 				{'foo': 'bar'},
 				{'x': 42},
 			],
 		)
 		self.assertEqual(
-			dio.accumulated_err,
+			self.err,
 			[],
 		)
 
@@ -203,27 +203,27 @@ class ProcessorTestCase(unittest.TestCase):
 
 		#run the serialization
 		dio.source(({'foo':'bar'}, {'x':42}),
-			out=dio.out_json(out=fout)
+			out=dio.json_out(out=fout)
 		)
 
 		#set stdin to be the string we wrote
 		fin = cStringIO.StringIO(fout.getvalue())
 
 		#run the deserialization
-		dio.in_json(inn=fin)
+		dio.json_in(inn=fin)
 
 
 		#--- inspect output
 
 		self.assertEqual(
-			dio.accumulated_out,
+			self.out,
 			[
 				{'foo': 'bar'},
 				{'x': 42},
 			],
 		)
 		self.assertEqual(
-			dio.accumulated_err,
+			self.err,
 			[],
 		)
 
@@ -247,9 +247,9 @@ class ProcessorTestCase(unittest.TestCase):
 
 		#--- inspect output
 
-		self.assertTrue(len(dio.accumulated_out) > 0)
-		self.assertTrue(len(dio.accumulated_out) < len(string.ascii_letters)) #(there is an astronomically small chance this will randomly not be true)
-		self.assertEqual(len(dio.accumulated_err), 0)
+		self.assertTrue(len(self.out) > 0)
+		self.assertTrue(len(self.out) < len(string.ascii_letters)) #(there is an astronomically small chance this will randomly not be true)
+		self.assertEqual(len(self.err), 0)
 
 	def test_uniq(self):
 		"""Test dio.uniq."""
@@ -264,7 +264,7 @@ class ProcessorTestCase(unittest.TestCase):
 		#--- inspect output
 
 		l_want = 2
-		l_got = len(dio.accumulated_out)
+		l_got = len(self.out)
 		self.assertEqual(l_want, l_got,
 			"uniq did not yield the proper number of output dicts; expected %d, got %s" % (l_want, l_got)
 		)
@@ -283,9 +283,9 @@ class ProcessorTestCase(unittest.TestCase):
 
 		expected_count = 3
 
-		self.assertEqual(len(dio.accumulated_out), 1)
+		self.assertEqual(len(self.out), 1)
 		self.assertEqual(
-			dio.accumulated_out[0]["count"],
+			self.out[0]["count"],
 			expected_count
 		)
 
