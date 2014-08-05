@@ -1,0 +1,8 @@
+#!/usr/bin/env python
+
+# Copyright (c) 2014, John A. Brunelle
+# All rights reserved.
+
+from dio import cli, sum_
+
+cli(sum_)
