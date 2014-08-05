@@ -165,8 +165,14 @@ default_err = json_out(out=sys.stderr)
 #--- cli
 
 def cli(p):
-	"""Run any processor as a standalone cli instance in a shell pipeline."""
-	default_in(out=p())
+	"""Run any processor as a standalone cli instance in a shell pipeline.
+
+	This works for both sources and pipeline participators.
+	"""
+	out=p()
+	#if p is a generator, it needs input; get it from the default source
+	if isinstance(out, types.GeneratorType):
+		default_in(out=out)
 
 
 #--- common constructs
