@@ -244,7 +244,7 @@ def uniq(out=None, err=None):
 
 @processor
 def count(out=None, err=None):
-	"""The dio processor analogous of coreutils' wc."""
+	"""The dio processor analogous to coreutils' wc."""
 	count = 0
 	try:
 		while True:
