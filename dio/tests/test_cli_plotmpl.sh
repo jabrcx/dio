@@ -3,7 +3,7 @@
 # Copyright (c) 2014, John A. Brunelle
 # All rights reserved.
 
-input='
+echo '
 {"foo": 8}
 {"bar": 8}
 {"zzz": 8}
@@ -12,6 +12,37 @@ input='
 {"foo": 8}
 {"x": 1}
 {"y": 1}
-'
+' | dio.plot.pie
 
-echo "$input" | dio.plot.pie
+echo '
+{"foo": 0.5}
+{"foo": 1.5}
+{"foo": 1.5}
+{"foo": 2.5}
+{"foo": 2.5}
+{"foo":	2.5}
+{"foo": 3.5}
+{"foo": 3.5}
+{"foo": 3.5}
+{"foo": 3.5}
+{"foo": 4.5}
+{"foo": 4.5}
+{"foo": 4.5}
+{"foo": 4.5}
+{"foo": 4.5}
+{"foo": 5.5}
+{"foo": 5.5}
+{"foo": 5.5}
+{"foo": 5.5}
+{"foo": 5.5}
+{"foo": 6.5}
+{"foo": 6.5}
+{"foo": 6.5}
+{"foo": 6.5}
+{"foo": 7.5}
+{"foo": 7.5}
+{"foo": 7.5}
+{"foo": 8.5}
+{"foo": 8.5}
+{"foo": 9.5}
+' | dio.plot.histogram
