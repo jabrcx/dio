@@ -3,6 +3,7 @@
 # Copyright (c) 2014, John A. Brunelle
 # All rights reserved.
 
-from dio import cli, sort
+from dio import cli
+from dio.coreutils import sort
 
 cli(sort)

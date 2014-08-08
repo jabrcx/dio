@@ -3,6 +3,7 @@
 # Copyright (c) 2014, John A. Brunelle
 # All rights reserved.
 
-from dio import cli, wc
+from dio import cli
+from dio.coreutils import wc
 
 cli(wc)
