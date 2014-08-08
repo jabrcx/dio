@@ -92,7 +92,7 @@ class ProcessorTestCase(unittest.TestCase):
 			i = 0
 			while True:
 				d = yield
-				if i%2==1:
+				if i%2 == 1:
 					raise Exception("bad one")
 				out.send(d)
 				i += 1
@@ -121,8 +121,8 @@ class ProcessorTestCase(unittest.TestCase):
 		"""Make sure a restart-on-error processor does not restart others.
 
 		An example of something that has state is dio.wc.  This tests sends the
-		output of a restart-on-error processor (that also produces errors) to 
-		dio.wc and ensure there is one total count rather than two separate 
+		output of a restart-on-error processor (that also produces errors) to
+		dio.wc and ensure there is one total count rather than two separate
 		partial counts.
 		"""
 
@@ -134,7 +134,7 @@ class ProcessorTestCase(unittest.TestCase):
 			i = 0
 			while True:
 				d = yield
-				if i%2==1:
+				if i%2 == 1:
 					raise Exception("bad one")
 				out.send(d)
 				i += 1
@@ -236,7 +236,7 @@ class ProcessorTestCase(unittest.TestCase):
 
 		def random_gate(d):
 			import random
-			if random.randint(0,1)==0:
+			if random.randint(0,1) == 0:
 				yield d
 
 
@@ -252,6 +252,31 @@ class ProcessorTestCase(unittest.TestCase):
 		self.assertTrue(len(self.out) > 0)
 		self.assertTrue(len(self.out) < len(string.ascii_letters)) #(there is an astronomically small chance this will randomly not be true)
 		self.assertEqual(len(self.err), 0)
+
+	def test_tidy(self):
+		"""Test dio.tidy."""
+
+		#a couple dicts with keys for each letter in the alphabet
+		inn = [
+			dict([ (c,"foo") for c in string.ascii_letters ]),
+			dict([ (c,"foo") for c in string.ascii_letters ]),
+		]
+
+		#want to tidy to only these keys:
+		keys = ('a', 'b', 'c')
+
+		#--- run it
+		dio.source(inn, out=dio.tidy(keys))
+
+
+		#--- inspect output
+
+		self.assertEqual(len(self.out), 2)  #two in, two out
+		for d in self.out:
+			self.assertTrue(len(d.keys()), 3)  #only three keys total
+			for k in keys:
+				self.assertTrue(k in d)  #and specifically those keys
+
 
 	def test_uniq(self):
 		"""Test dio.uniq."""

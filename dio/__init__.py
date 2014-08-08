@@ -225,6 +225,28 @@ def apply(f, out=None, err=None):
 		except Exception, e:
 			err.send({'error':str(e)})
 
+@processor
+def tidy(keys, out=None, err=None):
+	"""Get all the given keys and drop all other keys.
+
+	:param: keys: the keys of interest
+	:type: keys: an iterable
+
+	The given keys are used, thus triggering any extensions needed to compute
+	them.  Thus why this is not simply called `strip` -- it may add data to the
+	dicts, too.
+
+	Having all the given keys is not required.
+	"""
+	keys = set(keys)
+	while True:
+		d = yield
+		for k in set(d.keys()) - keys:
+			d.pop(k)
+		for k in keys:
+			d[k]  #trigger any extensions needed to compute it
+		out.send(d)
+
 
 #--- common reducers
 
