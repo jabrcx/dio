@@ -2,6 +2,9 @@ test dio.identity
 {"name": "foo"}
 {"name": "foo"}
 {"name": "bar"}
+test dio.tidy
+{"bar": 2}
+{"bar": 2}
 test dio.sort
 {"zzz": 1}
 {"foo": 3}

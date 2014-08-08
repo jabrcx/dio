@@ -197,7 +197,11 @@ def identity(out=None, err=None):
 
 @processor
 def filter(f, out=None, err=None):
-	"""Output input dicts iff f(d) is True."""
+	"""Output input dicts iff f(d) is True.
+
+	:param f: a callable that accepts a single input dict and returns the
+		boolean of whether or not to send the given dict.
+	"""
 	while True:
 		d = yield
 		try:
@@ -233,7 +237,7 @@ def tidy(keys, out=None, err=None):
 	:type: keys: an iterable
 
 	The given keys are used, thus triggering any extensions needed to compute
-	them.  Thus why this is not simply called `strip` -- it may add data to the
+	them.  Thus, this is not simply called `strip` -- it may add data to the
 	dicts, too.
 
 	Having all the given keys is not required.

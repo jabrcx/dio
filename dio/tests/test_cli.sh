@@ -14,6 +14,17 @@ echo '
 #{"name": "bar"}
 
 
+#---
+
+echo "test dio.tidy"
+echo '
+{"foo": 1, "bar": 2, "zzz": 3}
+{"foo": 1, "bar": 2, "zzz": 3}
+' | dio.tidy bar
+#{"bar": 2}
+#{"bar": 2}
+
+
 #--- coreutils
 
 echo "test dio.sort"
