@@ -234,23 +234,21 @@ class ProcessorTestCase(unittest.TestCase):
 
 		#--- something to apply
 
-		def random_gate(d):
-			import random
-			if random.randint(0,1) == 0:
+		def even_letters(d):
+			if ord(d['letter'])%2 == 0:
 				yield d
 
 
 		#--- run it
 
-		dio.source([ {'letter':c} for c in string.ascii_letters ],
-			out=dio.apply(random_gate)
+		dio.source([ {'letter':c} for c in string.ascii_lowercase ],
+			out=dio.apply(even_letters)
 		)
 
 
 		#--- inspect output
 
-		self.assertTrue(len(self.out) > 0)
-		self.assertTrue(len(self.out) < len(string.ascii_letters)) #(there is an astronomically small chance this will randomly not be true)
+		self.assertEqual(len(self.out), 13)
 		self.assertEqual(len(self.err), 0)
 
 	def test_tidy(self):
@@ -258,8 +256,8 @@ class ProcessorTestCase(unittest.TestCase):
 
 		#a couple dicts with keys for each letter in the alphabet
 		inn = [
-			dict([ (c,"foo") for c in string.ascii_letters ]),
-			dict([ (c,"foo") for c in string.ascii_letters ]),
+			dict([ (c,"foo") for c in string.ascii_lowercase ]),
+			dict([ (c,"foo") for c in string.ascii_lowercase ]),
 		]
 
 		#want to tidy to only these keys:
@@ -276,7 +274,6 @@ class ProcessorTestCase(unittest.TestCase):
 			self.assertTrue(len(d.keys()), 3)  #only three keys total
 			for k in keys:
 				self.assertTrue(k in d)  #and specifically those keys
-
 
 	def test_uniq(self):
 		"""Test dio.uniq."""
