@@ -9,99 +9,7 @@ import dio
 from dio import lazydict
 
 import settings
-
-
-#--- an example LazyDict
-
-class x_age(lazydict.Extension):
-	"""A very typical, one-to-one extension."""
-	source= ('birthdate',)
-	target = ('age',)
-	def __call__(cls, birthdate):
-		return time.time() - birthdate,
-
-class x_math(lazydict.Extension):
-	"""A very typical, many-to-many extension."""
-	source= ('x', 'y',)
-	target = ('sum', 'diff',)
-	def __call__(cls, x, y):
-		return x+y, x-y
-
-class x_indirect1of2(lazydict.Extension):
-	source= ('a',)
-	target = ('b',)
-	def __call__(cls, a):
-		return a+1,
-class x_indirect2of2(lazydict.Extension):
-	source= ('b',)
-	target = ('c',)
-	def __call__(cls, b):
-		return b+1,
-
-class x_identity(lazydict.Extension):
-	"""A simple identity/rename extension.
-	
-	Note that there is no implementation -- this is for testing the default 
-	behavior.
-	"""
-	source= ('name',)
-	target = ('name_copy',)
-
-class x_never(lazydict.Extension):
-	"""An extension where the target never actually gets computed."""
-	source= ('name',)
-	target = ('never',)
-	def __call__(self, name):
-		return None,
-
-class ExampleLazyDict(lazydict.LazyDict):
-	keys = [
-		#--- primary
-
-		'name',
-		#a string
-
-		'birthdate',
-		#a float, seconds since the epoch
-
-		'x',
-		#an int
-		
-		'y',
-		#an int
-
-		'a',
-		#a number
-
-
-		#--- derived
-
-		'age',
-		#an float, seconds since birthdate
-		
-		'sum',
-		#x+y
-		
-		'diff',
-		#x-y
-
-		'name_copy',
-		#just a copy of the name
-
-		'b',
-		#a+1
-
-		'c',
-		#b+1
-	]
-
-	extensions = [
-		x_age(),
-		x_math(),
-		x_identity(),
-		x_indirect1of2(),
-		x_indirect2of2(),
-	]
+from eglib import ExampleLazyDict, x_age, x_math
 
 
 #--- TestCases
@@ -136,7 +44,7 @@ class LazyDictTestCase(unittest.TestCase):
 
 	def test_extension_one_to_one(self):
 		e = x_age()
-		
+
 		age = e(self.in_birthdate)[0]
 
 		self.assertAlmostEqual(age, self.out_age, 0,
@@ -154,7 +62,7 @@ class LazyDictTestCase(unittest.TestCase):
 		self.assertEqual(diff, self.out_diff,
 			"a many-to-many extension (using Extension class directly) resulted in at least one bad value"
 		)
-	
+
 
 	#--- fundamental LazyDict operation
 
@@ -164,14 +72,14 @@ class LazyDictTestCase(unittest.TestCase):
 
 		#with additional data
 		d = ExampleLazyDict(name=self.in_name, birthdate=self.in_birthdate)
-	
+
 	def test_getitem_extension_one_to_one(self):
 		d = ExampleLazyDict(name=self.in_name, birthdate=self.in_birthdate)
-		
+
 		self.assertAlmostEqual(d['age'], self.out_age, 0,
 			"a one-to-one extension did not result in the expected numerical value"
 		)
-	
+
 	def test_getitem_extension_many_to_many(self):
 		d = ExampleLazyDict(name=self.in_name, x=self.in_x, y=self.in_y)
 
@@ -181,7 +89,7 @@ class LazyDictTestCase(unittest.TestCase):
 		self.assertEqual(d['diff'], self.out_diff,
 			"a many-to-many extension resulted in at least one bad value"
 		)
-	
+
 	def test_getitem_extension_indirect(self):
 		d = ExampleLazyDict(a=self.in_a)
 
@@ -201,20 +109,20 @@ class LazyDictTestCase(unittest.TestCase):
 		d = ExampleLazyDict(a=self.in_a)
 
 		self.assertTrue(d.has_key('c'))
-	
+
 	def test_getitem_not_available_no_source(self):
 		#note no birthdate, therefore not possible to compute age by extension
 		d = ExampleLazyDict(name=self.in_name)
 		self.assertRaises(KeyError, d.__getitem__, 'age')
-	
+
 	def test_getitem_not_available_extension_not_providing_it(self):
 		d = ExampleLazyDict(name=self.in_name)
 		self.assertRaises(KeyError, d.__getitem__, 'never')
-	
+
 	def test_getitem_unexpected_key(self):
 		d = ExampleLazyDict(name=self.in_name)
 		self.assertRaises(KeyError, d.__getitem__, 'this-is-not-a-known-key')
-	
+
 	def test_getitem_identity_extension(self):
 		d = ExampleLazyDict(name=self.in_name)
 		self.assertEqual(d['name'], d['name_copy'],
@@ -227,9 +135,9 @@ class LazyDictTestCase(unittest.TestCase):
 	def test_getitem_extension_done_once(self):
 		"""Test that the an extension is computed only once."""
 		d = ExampleLazyDict(name=self.in_name, birthdate=self.in_birthdate)
-		
+
 		count = d._extension_count  #(class var, so this will have been jacked up by other instances)
-		
+
 		d['age']
 		self.assertEqual(
 			d._extension_count,
@@ -247,7 +155,7 @@ class LazyDictTestCase(unittest.TestCase):
 		"""Test that the an extension is computed only once."""
 		d = ExampleLazyDict(name=self.in_name, x=self.in_x, y=self.in_y)
 		d['_laziness'] = lazydict.LAZINESS_QUERY_OPTIMIZED  #(the default)
-		
+
 		count = d._extension_count  #(class var, so this will have been jacked up by other instances)
 
 		d['sum']  #this should store 'diff', too
@@ -268,7 +176,7 @@ class LazyDictTestCase(unittest.TestCase):
 		"""Test that the an extension is computed only once."""
 		d = ExampleLazyDict(name=self.in_name, x=self.in_x, y=self.in_y)
 		d['_laziness'] = lazydict.LAZINESS_DATA_OPTIMIZED  #(the default)
-		
+
 		count = d._extension_count  #(class var, so this will have been jacked up by other instances)
 
 		d['sum']  #this should NOT store 'diff', too
