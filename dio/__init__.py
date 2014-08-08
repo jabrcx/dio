@@ -258,10 +258,7 @@ def math(op):
 			while True:
 				d = yield
 				for k, v in d.iteritems():
-					try:
-						result[k] = op(result.get(k), v)
-					except KeyError:
-						result[k] = 1
+					result[k] = op(result.get(k), v)
 		except GeneratorExit:
 			for i in result.items():
 				out.send(dict((i,)))
