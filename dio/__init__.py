@@ -7,6 +7,16 @@
 import sys, types, functools
 
 
+#--- setup logging
+
+import logging
+#(logging.NullHandler was introduced in 2.7, and this code is 2.6 compatible)
+class NullHandler(logging.Handler):
+    def emit(self, record):
+        pass
+logging.getLogger('dio').addHandler(NullHandler())
+
+
 #--- decorators for the basic roles
 
 def processor(f):

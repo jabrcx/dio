@@ -28,6 +28,7 @@ Youssef and John A. Brunelle.
 """
 
 
+import logging
 from itertools import repeat, izip, chain
 
 
@@ -69,7 +70,7 @@ class Extension(object):
 	source = ()  #a tuple of keys
 	target = ()  #a tuple of keys
 
-	def __str__(self):
+	def __repr__(self):
 		return '<(%s)->(%s)>' % (','.join(self.source), ','.join(self.target))
 
 	def __call__(self, *args):
@@ -188,6 +189,7 @@ class LazyDict(dict):
 				for sources_known_present, e in chain(izip(repeat(True), e1), izip(repeat(False), e2)):
 					if sources_known_present or all([ (sk in self) for sk in e.source ]):  #(sk in self) makes this recursive and allows for extension chaining
 						#we have all the required source values; run the extension
+						logging.getLogger('dio.lazydict.extension').debug(repr(e))
 						LazyDict._extension_count += 1
 						for k, v in izip(e.target, e(*[ dict.__getitem__(self, sk) for sk in e.source ])):
 							if v is not None:

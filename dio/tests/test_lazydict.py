@@ -8,6 +8,8 @@ import time, unittest
 import dio
 from dio import lazydict
 
+import settings
+
 
 #--- an example LazyDict
 

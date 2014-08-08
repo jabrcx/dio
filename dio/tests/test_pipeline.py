@@ -7,6 +7,8 @@
 import sys, time, string, cStringIO, unittest
 import dio
 
+import settings
+
 
 class ProcessorTestCase(unittest.TestCase):
 	def setUp(self):
