@@ -6,6 +6,7 @@
 
 import sys, time, string, cStringIO, unittest
 import dio
+import dio.coreutils
 
 import settings
 
@@ -144,7 +145,7 @@ class ProcessorTestCase(unittest.TestCase):
 
 		dio.source(({"name":"a"}, {"name":"b"}, {"name":"c"}),
 			out=every_other_fails(
-				out=dio.wc()
+				out=dio.coreutils.wc()
 			)
 		)
 
@@ -281,7 +282,7 @@ class ProcessorTestCase(unittest.TestCase):
 		#--- run it
 
 		dio.source(({"name":"foo"}, {"name":"foo"}, {"name":"bar"}),
-			out=dio.uniq()
+			out=dio.coreutils.uniq()
 		)
 
 
@@ -299,7 +300,7 @@ class ProcessorTestCase(unittest.TestCase):
 		#--- run it
 
 		dio.source(({"name":"foo"}, {"name":"foo"}, {"name":"bar"}),
-			out=dio.wc()
+			out=dio.coreutils.wc()
 		)
 
 
