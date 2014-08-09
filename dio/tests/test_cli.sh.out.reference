@@ -5,6 +5,7 @@ test dio.identity
 test dio.tidy
 {"bar": 2}
 {"bar": 2}
+{"sum": 8, "__class__": "eglib.ExampleLazyDict"}
 test dio.sort
 {"zzz": 1}
 {"foo": 3}

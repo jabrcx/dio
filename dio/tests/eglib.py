@@ -53,7 +53,7 @@ class x_never(lazydict.Extension):
 		return None,
 
 class ExampleLazyDict(lazydict.LazyDict):
-	keys = [
+	_keys = [
 		#--- primary
 
 		'name',

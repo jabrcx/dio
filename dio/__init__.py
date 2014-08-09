@@ -101,6 +101,22 @@ def source(iterable, out=None, err=None):
 		out.send(d)
 
 
+#--- serialization
+
+def pre_serialize(d):
+	if type(d) != dict:
+		d['__class__'] = '.'.join((d.__class__.__module__, d.__class__.__name__))
+	return d
+
+def post_deserialize(d):
+	#LBYL since optimizing for built-in dicts
+	if d.has_key('__class__'):
+		m, c = d['__class__'].rsplit('.',1)  #assuming all subclasses are in modules
+		m = __import__(m)
+		d = getattr(m, c)(d)
+	return d
+
+
 #--- standard i/o
 
 #though these have the form of standard processors, out and err should be
@@ -111,12 +127,12 @@ import ast
 @processor
 def repr_in(inn=None, out=None, err=None):
 	for line in inn:
-		out.send(ast.literal_eval(line))
+		out.send(post_deserialize(ast.literal_eval(line)))
 @processor
 def repr_out(out=None, err=None):
 	while True:
 		d = yield
-		out.write(repr(d)+'\n')
+		out.write(repr(pre_serialize(d))+'\n')
 
 #pickle (file-like)
 import cPickle
@@ -124,7 +140,7 @@ import cPickle
 def pickle_in(inn=None, out=None, err=None):
 	while True:
 		try:
-			out.send(cPickle.load(inn))
+			out.send(post_deserialize(cPickle.load(inn)))
 		except EOFError:
 			break
 @processor
@@ -132,7 +148,7 @@ def pickle_out(out=None, err=None):
 	"""like other sinks, out and err should be file-like objects"""
 	while True:
 		d = yield
-		cPickle.dump(d, out)
+		cPickle.dump(pre_serialize(d), out)
 
 #json (file-like)
 import json
@@ -140,7 +156,7 @@ import json
 def json_in(inn=sys.stdin, out=None, err=None):
 	for line in inn:
 		try:
-			out.send(json.loads(line))
+			out.send(post_deserialize(json.loads(line)))
 		except ValueError:
 			if line.strip()!='':
 				raise
@@ -149,7 +165,7 @@ def json_out(out=None, err=None):
 	"""like other sinks, out and err should be file-like objects"""
 	while True:
 		d = yield
-		json.dump(d, out)
+		json.dump(pre_serialize(d), out)
 		out.write('\n')
 
 #buffers (iterable/appendable)
@@ -245,10 +261,14 @@ def tidy(keys, out=None, err=None):
 	keys = set(keys)
 	while True:
 		d = yield
+		for k in keys:
+			#EAFP since assuming caller expects these keys
+			try:
+				d[k]  #trigger any extensions needed to compute it
+			except KeyError:
+				pass
 		for k in set(d.keys()) - keys:
 			d.pop(k)
-		for k in keys:
-			d[k]  #trigger any extensions needed to compute it
 		out.send(d)
 
 
@@ -280,43 +300,3 @@ def count(x, v):
 def sum_(x, v):
 	"""Sum values for each key."""
 	return x + v if x is not None else v
-
-
-#--- coreutils
-
-@processor
-def sort(out=None, err=None):
-	"""Sort by value.
-
-	Assumes each input is a one-item dict.
-	"""
-	result = []
-	try:
-		while True:
-			d = yield
-			result.append(d)
-	except GeneratorExit:
-		result.sort(key=lambda d: d.itervalues().next())
-		for d in result:
-			out.send(d)
-
-@processor
-def uniq(out=None, err=None):
-	"""The dio equivalent of coreutils' uniq."""
-	prev = None
-	while True:
-		d = yield
-		if d!=prev:  #(always True the first time, when prev is None)
-			out.send(d)
-		prev = d
-
-@processor
-def wc(out=None, err=None):
-	"""The dio processor analogous to coreutils' wc."""
-	count = 0
-	try:
-		while True:
-			d = yield
-			count += 1
-	except GeneratorExit:
-		out.send({"count":count})

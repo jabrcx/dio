@@ -24,6 +24,10 @@ echo '
 #{"bar": 2}
 #{"bar": 2}
 
+#sum must be computed through extension, since eg.source does not include it
+./eg.source | dio.tidy sum
+#{"sum": 8, "__class__": "eglib.ExampleLazyDict"}
+
 
 #--- coreutils
 
