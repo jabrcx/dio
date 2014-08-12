@@ -4,7 +4,7 @@
 """lazy dict-based i/o processing pipelines"""
 
 
-import sys, types, functools
+import sys, types, functools, errno
 
 
 #--- setup logging
@@ -195,10 +195,14 @@ def cli(p):
 
 	This works for both sources and pipeline participators.
 	"""
-	out=p()
-	#if p is a generator, it needs input; get it from the default source
-	if isinstance(out, types.GeneratorType):
-		default_in(out=out)
+	try:
+		out=p()
+		#if p is a generator, it needs input; get it from the default source
+		if isinstance(out, types.GeneratorType):
+			default_in(out=out)
+	except IOError, e:
+		if hasattr(e, 'errno') and e.errno==errno.EPIPE: pass
+		else: raise
 
 
 #--- common constructs
