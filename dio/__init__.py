@@ -112,7 +112,7 @@ def post_deserialize(d):
 	#LBYL since optimizing for built-in dicts
 	if d.has_key('__class__'):
 		m, c = d['__class__'].rsplit('.',1)  #assuming all subclasses are in modules
-		m = __import__(m)
+		m = __import__(m, fromlist=[None])  #any non-empty fromlist allows importing from a package hierarchy
 		d = getattr(m, c)(d)
 	return d
 
