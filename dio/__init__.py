@@ -268,7 +268,27 @@ def tidy(keys, out=None, err=None):
 			except KeyError:
 				pass
 		for k in set(d.keys()) - keys:
-			d.pop(k)
+			d.pop(k, None)  #(the key will always be there, but it not being there is not an error per se)
+		out.send(d)
+
+@processor
+def strip(keys, out=None, err=None):
+	"""Drop the given keys.
+
+	:param: keys: the keys to drop
+	:type: keys: an iterable
+
+	The given keys are used, thus triggering any extensions needed to compute
+	them.  Thus, this is not simply called `strip` -- it may add data to the
+	dicts, too.
+
+	Having all the given keys is not required.
+	"""
+	keys = set(keys)
+	while True:
+		d = yield
+		for k in keys:
+			d.pop(k, None)
 		out.send(d)
 
 
