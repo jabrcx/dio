@@ -4,12 +4,18 @@
 # All rights reserved.
 
 echo '
-{"foo": 8}
-{"bar": 8}
+{"name": "foo", "value": 24}
+{"name": "bar", "value": 16}
+{"name": "zzz", "value":  8}
+{"name":   "x", "value":  1}
+{"name":   "y", "value":  1}
+' | dio.plot.pie name value
+
+#this is not the normal data model! but it works, for convenience
+echo '
+{"foo": 24}
+{"bar": 16}
 {"zzz": 8}
-{"foo": 8}
-{"bar": 8}
-{"foo": 8}
 {"x": 1}
 {"y": 1}
 ' | dio.plot.pie

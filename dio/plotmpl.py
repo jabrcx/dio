@@ -8,7 +8,7 @@ from dio import processor
 DEFAULT_FIGURE_SIZE = (5,5)
 
 @processor
-def pie(out=None, err=None):
+def pie(label_k=None, value_k=None, out=None, err=None):
 	"""Make a pie chart."""
 
 	import matplotlib.pyplot as plt
@@ -24,12 +24,11 @@ def pie(out=None, err=None):
 	try:
 		while True:
 			d = yield
-			#for each key, accumulate the values
-			for k in d:
-				try:
-					pie[k] += d[k]
-				except KeyError:
-					pie[k] = d[k]
+			if label_k is not None and value_k is not None:
+				pie[d[label_k]] = d[value_k]
+			else:
+				for k, v in d.items():
+					pie[k] = v
 	except GeneratorExit:
 		if len(pie) > 0:
 			#collapse small slices into one, if applicable

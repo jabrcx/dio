@@ -1,5 +1,8 @@
+# -*- coding: utf-8 -*-
+
 # Copyright (c) 2014, John A. Brunelle
 # All rights reserved.
+
 
 """lazy dict-based i/o processing pipelines"""
 
@@ -298,29 +301,47 @@ def strip(keys, out=None, err=None):
 
 #--- common reducers
 
-def math(op):
-	@functools.wraps(op)  #(for __doc__)
-	def p(out=None, err=None):
-		result = {}
-		try:
-			while True:
-				d = yield
-				for k, v in d.iteritems():
-					result[k] = op(result.get(k), v)
-		except GeneratorExit:
-			for i in result.items():
-				out.send(dict((i,)))
-
-	return p
-
 @processor
-@math
-def count(x, v):
+def count(out=None, err=None):
 	"""Count appearences of each key."""
-	return x + 1 if x is not None else 1
+	result = {}
+	try:
+		while True:
+			d = yield
+			for k, v in d.iteritems():
+				result[k] = result.get(k,0) + 1
+	except GeneratorExit:
+		for i in result.items():
+			out.send(dict((i,)))
 
 @processor
-@math
-def sum_(x, v):
+def sum_(out=None, err=None):
 	"""Sum values for each key."""
-	return x + v if x is not None else v
+	result = {}
+	try:
+		while True:
+			d = yield
+			for k, v in d.iteritems():
+				result[k] = result.get(k,0) + v
+	except GeneratorExit:
+		for i in result.items():
+			out.send(dict((i,)))
+
+@processor
+def average(out=None, err=None):
+	"""Sum values for each key."""
+	counts = {}  #for each key, Σ1 for all values v for that key
+	sums = {}  #for each key, Σv for all values v for that key
+	sums_sqs = {}  #for each key, Σ(v²) for all values v for that key
+	try:
+		while True:
+			d = yield
+			for k, v in d.iteritems():
+				counts[k] = counts.get(k,0) + 1
+				sums[k] = sums.get(k,0) + v
+				sums_sqs[k] = sums_sqs.get(k,0) + v**2
+	except GeneratorExit:
+		count = len(sums)
+		averages = { k: float(v)/counts[k] for k, v in sums.items() }
+		for i in averages.items():
+			out.send(dict((i,)))

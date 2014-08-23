@@ -3,7 +3,19 @@
 # Copyright (c) 2014, John A. Brunelle
 # All rights reserved.
 
-from dio import cli
+import sys
+
+from dio import default_in
 from dio.plotmpl import pie
 
-cli(pie)
+#TODO this just a hack until there is systematic arg parsing
+try:
+	label_k = sys.argv[1]
+except IndexError:
+	label_k = None
+try:
+	value_k = sys.argv[2]
+except IndexError:
+	value_k = None
+
+default_in(out=pie(label_k, value_k))
