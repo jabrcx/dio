@@ -30,7 +30,7 @@ echo '
 ' | dio.average
 
 
-#--- --breakdown
+#--- --groupby
 
 ##not implemented yet
 #echo '
@@ -42,4 +42,4 @@ echo '
 #{"name: "foo", "value": 8}
 #{"name:   "x", "value": 1}
 #{"name:   "y", "value": 1}
-#' | dio.sum --breakdown name
+#' | dio.sum --groupby name
