@@ -1,3 +1,5 @@
+# -*- coding: utf-8 -*-
+
 # Copyright (c) 2014, John A. Brunelle
 # All rights reserved.
 
