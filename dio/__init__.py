@@ -211,14 +211,15 @@ def cli(p):
 #--- common constructs
 
 @processor
+@restart_on_error
 def identity(out=None, err=None):
 	"""Output all input dicts."""
 	while True:
 		d = yield
 		out.send(d)
 
-
 @processor
+@restart_on_error
 def filter(f, out=None, err=None):
 	"""Output input dicts iff f(d) is True.
 
@@ -227,13 +228,10 @@ def filter(f, out=None, err=None):
 	"""
 	while True:
 		d = yield
-		try:
-			if f(d): out.send(d)
-		except Exception, e:
-			err.send({'error':str(e)})
-
+		if f(d): out.send(d)
 
 @processor
+@restart_on_error
 def apply(f, out=None, err=None):
 	"""For each sent d, send all f(d).
 
@@ -246,13 +244,11 @@ def apply(f, out=None, err=None):
 	"""
 	while True:
 		d = yield
-		try:
-			for d2 in f(d):
-				out.send(d2)
-		except Exception, e:
-			err.send({'error':str(e)})
+		for d2 in f(d):
+			out.send(d2)
 
 @processor
+@restart_on_error
 def tidy(keys, out=None, err=None):
 	"""Get all the given keys and drop all other keys.
 
@@ -279,6 +275,7 @@ def tidy(keys, out=None, err=None):
 		out.send(d)
 
 @processor
+@restart_on_error
 def strip(keys, out=None, err=None):
 	"""Drop the given keys.
 
@@ -303,7 +300,7 @@ def strip(keys, out=None, err=None):
 
 @processor
 def count(out=None, err=None):
-	"""Count appearences of each key."""
+	"""Count appearances of each key."""
 	result = {}
 	try:
 		while True:

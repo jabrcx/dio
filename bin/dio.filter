@@ -1,0 +1,75 @@
+#!/usr/bin/env python
+
+# Copyright (c) 2014, John A. Brunelle
+# All rights reserved.
+
+"""
+NOTE: this calls eval() on user-provided input!
+"""
+
+import sys
+
+from dio import default_in, filter
+
+
+def quote(s):
+	"""Return the text quoted as a Python string."""
+
+	s = "'" + s.replace("'", """'"'"'""") + "'"
+
+	#get rid of gratuitous leading and trailing empty strings
+	if s.startswith("''"): s = s[2:]
+	if   s.endswith("''"): s = s[:-2]
+
+	return s
+
+#mapping of shell test syntax to Python
+opmap = {
+	'-lt': '<',
+	'-le': '<=',
+	'-ge': '>=',
+	'-gt': '>',
+	
+	'-eq': '==',
+	  '=': '==',
+	'-ne': '!=',
+	 '!=': '!=',
+
+	'-o': 'or',
+	'-a': 'and',
+	 '!': 'not',
+}
+
+def process_tok(tok):
+	if tok.startswith('%'):
+		return 'd[' + quote(tok[1:]) + ']'
+	if \
+		tok in ('(', ')') or \
+		tok[0].isdigit() or \
+		tok[0] in ('"', "'") or \
+		tok in ('True', 'False'):
+		return tok
+	else:
+		try:
+			return opmap[tok]
+		except KeyError:
+			return quote(tok)
+
+toks = []
+for tok in sys.argv[1:]:
+	toks.append(process_tok(tok))
+
+condition_code = compile(
+	' '.join(toks),
+	filename='<unknown>',
+	mode='eval',
+)
+
+def f(d):
+	return eval(
+		condition_code,
+		{},  #globals
+		{'d':d},  #locals
+	)
+
+default_in(out=filter(f))

@@ -1,4 +1,4 @@
-non-gui: basics math
+non-gui: basics filter math
 	@echo SUCCESS
 
 basics:
@@ -7,6 +7,11 @@ basics:
 	./test_cli.sh > test_cli.sh.out.current
 	diff test_cli.sh.out.reference test_cli.sh.out.current
 	rm test_cli.sh.out.current
+
+filter:
+	./test_cli_filter.sh > test_cli_filter.sh.out.current
+	diff test_cli_filter.sh.out.reference test_cli_filter.sh.out.current
+	rm test_cli_filter.sh.out.current
 
 math:
 	./test_cli_math.sh > test_cli_math.sh.out.current
