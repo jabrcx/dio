@@ -8,6 +8,7 @@
 
 
 import sys, types, functools, errno
+import errors
 
 
 #--- setup logging
@@ -81,18 +82,8 @@ def restart_on_error(f):
 					f2.send(d)
 			except Exception, e:
 				#(GeneratorExit is not an Exception, just BaseException)
-				kwargs['err'].send(e2d(e))
+				kwargs['err'].send(errors.e2d(e))
 	return restarter
-
-
-#--- exception handling
-
-def e2d(e):
-	"""Convert an Exception to a LazyDict.
-
-	#FIXME this needs a lot of work -- it's really just a placeholder for now.
-	"""
-	return {'message': e.message}
 
 
 #--- sources
