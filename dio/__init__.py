@@ -330,6 +330,8 @@ def average(out=None, err=None):
 				sums_sqs[k] = sums_sqs.get(k,0) + v**2
 	except GeneratorExit:
 		count = len(sums)
-		averages = { k: float(v)/counts[k] for k, v in sums.items() }
+		##2.6 doesn't have dict comprehensions
+		#averages = { k: float(v)/counts[k] for k, v in sums.items() }
+		averages = dict((k,float(v)/counts[k]) for k, v in sums.items())
 		for i in averages.items():
 			out.send(dict((i,)))
