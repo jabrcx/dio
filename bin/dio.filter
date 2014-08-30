@@ -25,15 +25,24 @@ def quote(s):
 
 #mapping of shell test syntax to Python
 opmap = {
+	#python syntax
+	  '<': '<',
+	 '<=': '<=',
+	 '==': '==',
+	 '>=': '>=',
+	  '>': '>',
+	 '!=': '!=',
+
+	#test(1) syntax
 	'-lt': '<',
 	'-le': '<=',
 	'-ge': '>=',
 	'-gt': '>',
-	
+
 	'-eq': '==',
 	  '=': '==',
 	'-ne': '!=',
-	 '!=': '!=',
+	 '!=': '!=',  #(repeat from above)
 
 	'-o': 'or',
 	'-a': 'and',
