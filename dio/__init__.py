@@ -299,7 +299,7 @@ def count(out=None, err=None):
 			for k, v in d.iteritems():
 				result[k] = result.get(k,0) + 1
 	except GeneratorExit:
-		for i in result.items():
+		for i in result.iteritems():
 			out.send(dict((i,)))
 
 @processor
@@ -312,7 +312,7 @@ def sum_(out=None, err=None):
 			for k, v in d.iteritems():
 				result[k] = result.get(k,0) + v
 	except GeneratorExit:
-		for i in result.items():
+		for i in result.iteritems():
 			out.send(dict((i,)))
 
 @processor
@@ -331,7 +331,7 @@ def average(out=None, err=None):
 	except GeneratorExit:
 		count = len(sums)
 		##2.6 doesn't have dict comprehensions
-		#averages = { k: float(v)/counts[k] for k, v in sums.items() }
-		averages = dict((k,float(v)/counts[k]) for k, v in sums.items())
-		for i in averages.items():
+		#averages = { k: float(v)/counts[k] for k, v in sums.iteritems() }
+		averages = dict((k,float(v)/counts[k]) for k, v in sums.iteritems())
+		for i in averages.iteritems():
 			out.send(dict((i,)))

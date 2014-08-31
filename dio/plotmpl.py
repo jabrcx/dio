@@ -29,7 +29,7 @@ def pie(label_k=None, value_k=None, out=None, err=None):
 			if label_k is not None and value_k is not None:
 				pie[d[label_k]] = d[value_k]
 			else:
-				for k, v in d.items():
+				for k, v in d.iteritems():
 					pie[k] = v
 	except GeneratorExit:
 		if len(pie) > 0:
