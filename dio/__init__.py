@@ -44,7 +44,7 @@ def processor(f):
 	   use (this returns None).
 	"""
 	@functools.wraps(f)  #(for __doc__)
-	def primed_f(*args,**kwargs):
+	def g(*args,**kwargs):
 		#set out and err to default values if not specified; default_out/err
 		#won't be available for the standard sink processors, since they are
 		#used to set default_out/err
@@ -53,14 +53,20 @@ def processor(f):
 				if k not in kwargs or kwargs[k] is None:
 					kwargs[k] = v
 
-		f2 = f(*args,**kwargs)
+		try:
+			f2 = f(*args,**kwargs)
+		except StopIteration:
+			#f was a source, which ran the pipeline, and StopIteration has
+			#bubbled up, which just means something down the pipeline has
+			#stopped it prematurely; that's fine.
+			pass
+		else:
+			#coroutine priming
+			if isinstance(f2, types.GeneratorType):
+				f2.send(None)
+				return f2
 
-		#coroutine priming
-		if isinstance(f2, types.GeneratorType):
-			f2.send(None)
-			return f2
-
-	return primed_f
+	return g
 
 def restart_on_error(f):
 	"""Decorate a processing function so that it's restarted upon any errors.
@@ -72,7 +78,7 @@ def restart_on_error(f):
 	This @restart_on_error decorator should be applied *before* (i.e. on a
 	lower line) than the @processor decorator.
 	"""
-	def restarter(*args, **kwargs):
+	def g(*args, **kwargs):
 		while True:
 			try:
 				f2 = f(*args, **kwargs)
@@ -80,10 +86,24 @@ def restart_on_error(f):
 				while True:
 					d = yield
 					f2.send(d)
+			except (GeneratorExit, StopIteration):
+				break
 			except Exception, e:
-				#(GeneratorExit is not an Exception, just BaseException)
 				kwargs['err'].send(errors.e2d(e))
-	return restarter
+	return g
+
+def suppress_epipe(f):
+	def g(*args, **kwargs):
+		try:
+			f2 = f(*args, **kwargs)
+			f2.next()
+			while True:
+				d = yield
+				f2.send(d)
+		except IOError, e:
+			if e.errno != errno.EPIPE:
+				raise
+	return g
 
 
 #--- sources
@@ -123,6 +143,7 @@ def repr_in(inn=None, out=None, err=None):
 	for line in inn:
 		out.send(post_deserialize(ast.literal_eval(line)))
 @processor
+@suppress_epipe
 def repr_out(out=None, err=None):
 	while True:
 		d = yield
@@ -138,6 +159,7 @@ def pickle_in(inn=None, out=None, err=None):
 		except EOFError:
 			break
 @processor
+@suppress_epipe
 def pickle_out(out=None, err=None):
 	"""like other sinks, out and err should be file-like objects"""
 	while True:
@@ -155,6 +177,7 @@ def json_in(inn=sys.stdin, out=None, err=None):
 			if line.strip()!='':
 				raise
 @processor
+@suppress_epipe
 def json_out(out=None, err=None):
 	"""like other sinks, out and err should be file-like objects"""
 	while True:
@@ -184,19 +207,49 @@ default_err = json_out(out=sys.stderr)
 
 #--- cli
 
-def cli(p):
-	"""Run any processor as a standalone cli instance in a shell pipeline.
+'''
+def cli2(p):
+	"""Run any processor as a standalone cli instance.
 
-	This works for both sources and pipeline participators.
+	This is for creating the building blocks to create dio piplines in shell.
+
+	:param p: the processor to run
+	:type foo: a generator (a started coroutine)
+
+	This does nothing if p is a None, so, for consistency, ``cli(s())``, where
+	`s` is a source processor, also works.  Since a source is not a coroutine,
+	it fully runs and returns None before cli is entered.
 	"""
 	try:
-		out=p()
-		#if p is a generator, it needs input; get it from the default source
-		if isinstance(out, types.GeneratorType):
-			default_in(out=out)
+		if not isinstance(p, types.GeneratorType):
+			p = p()
+		#if out is a coroutine (rather than a source), it needs input; get it
+		#from the default source
+		if isinstance(p, types.GeneratorType):
+			default_in(out=p)
+	except (GeneratorExit, StopIteration):
+		pass
 	except IOError, e:
-		if hasattr(e, 'errno') and e.errno==errno.EPIPE: pass
-		else: raise
+		if e.errno != errno.EPIPE: raise
+
+def cli(p, *args, **kwargs):
+	"""Run any processor as a standalone cli instance.
+
+	This is for creating the building blocks to create dio piplines in shell.
+	"""
+	try:
+		if not isinstance(p, types.GeneratorType):
+			p = p(*args, **kwargs)
+
+		#if out is a coroutine (rather than a source), it needs input; get it
+		#from the default source
+		if isinstance(p, types.GeneratorType):
+			default_in(out=p)
+	except (GeneratorExit, StopIteration):
+		pass
+	except IOError, e:
+		if e.errno != errno.EPIPE: raise
+'''
 
 
 #--- common constructs

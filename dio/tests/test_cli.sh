@@ -1,7 +1,11 @@
 #!/usr/bin/env bash
+set -e
 
 # Copyright (c) 2014, John A. Brunelle
 # All rights reserved.
+
+
+#--- misc basics (and testers needed for those)
 
 echo "test dio.identity"
 echo '
@@ -13,9 +17,6 @@ echo '
 #{"name": "foo"}
 #{"name": "bar"}
 
-
-#---
-
 echo "test dio.tidy"
 echo '
 {"foo": 1, "bar": 2, "zzz": 3}
@@ -24,9 +25,19 @@ echo '
 #{"bar": 2}
 #{"bar": 2}
 
-#sum must be computed through extension, since eg.source does not include it
-./eg.source | dio.tidy sum
+#sum must be computed through extension, since eg.send_one does not include it
+./eg.send_one | dio.tidy sum
 #{"sum": 8, "__class__": "eglib.ExampleLazyDict"}
+
+echo "test eg.cli_of_python_pipeline"
+echo '
+{"x": 10, "y": 25}
+{"x": 15, "y": 20}
+{"x": 20, "y": 15}
+{"x": 25, "y": 10}
+' | ./eg.cli_of_python_pipeline | dio.tidy x
+#{"x": 15}
+#{"x": 20}
 
 
 #--- coreutils

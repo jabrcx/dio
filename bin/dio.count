@@ -3,6 +3,6 @@
 # Copyright (c) 2014, John A. Brunelle
 # All rights reserved.
 
-from dio import cli, count
+from dio import default_in, count
 
-cli(count)
+default_in(out=count())

@@ -3,6 +3,6 @@
 # Copyright (c) 2014, John A. Brunelle
 # All rights reserved.
 
-from dio import cli, sum_
+from dio import default_in, sum_
 
-cli(sum_)
+default_in(out=sum_())

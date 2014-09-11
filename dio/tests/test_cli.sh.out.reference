@@ -6,6 +6,9 @@ test dio.tidy
 {"bar": 2}
 {"bar": 2}
 {"sum": 8, "__class__": "eglib.ExampleLazyDict"}
+test eg.cli_of_python_pipeline
+{"x": 15}
+{"x": 20}
 test dio.sort
 {"zzz": 1}
 {"foo": 3}

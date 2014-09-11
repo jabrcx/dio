@@ -6,9 +6,9 @@
 """an example LazyDict with Extensions"""
 
 
-import time
+import time, itertools
 
-from dio import lazydict
+from dio import lazydict, processor
 
 
 #--- an example LazyDict
@@ -102,3 +102,29 @@ class ExampleLazyDict(lazydict.LazyDict):
 		x_indirect1of2(),
 		x_indirect2of2(),
 	]
+
+
+#--- some processors
+
+@processor
+def send_one(out=None, err=None):
+	out.send(ExampleLazyDict(x=3, y=5))
+
+@processor
+def send_infinite(out=None, err=None):
+	for d in itertools.repeat(ExampleLazyDict(x=3, y=5)):
+		out.send(d)
+
+@processor
+def x_gt_10(out=None, err=None):
+	while True:
+		d = yield
+		if d['x'] > 10:
+			out.send(d)
+
+@processor
+def y_gt_10(out=None, err=None):
+	while True:
+		d = yield
+		if d['y'] > 10:
+			out.send(d)

@@ -3,6 +3,6 @@
 # Copyright (c) 2014, John A. Brunelle
 # All rights reserved.
 
-from dio import default_in, identity
+from eglib import send_one
 
-default_in(out=identity())
+send_one()

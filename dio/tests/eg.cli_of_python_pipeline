@@ -4,6 +4,7 @@
 # All rights reserved.
 
 from dio import default_in
-from dio.coreutils import sort
 
-default_in(out=sort())
+from eglib import x_gt_10, y_gt_10
+
+default_in(out=x_gt_10(out=y_gt_10()))

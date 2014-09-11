@@ -3,7 +3,7 @@
 # Copyright (c) 2014, John A. Brunelle
 # All rights reserved.
 
-from dio import cli
+from dio import default_in
 from dio.coreutils import wc
 
-cli(wc)
+default_in(out=wc())

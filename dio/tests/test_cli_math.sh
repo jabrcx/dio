@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+set -e
 
 # Copyright (c) 2014, John A. Brunelle
 # All rights reserved.
