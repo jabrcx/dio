@@ -2,6 +2,8 @@ test dio.identity
 {"name": "foo"}
 {"name": "foo"}
 {"name": "bar"}
+test EPIPE recovery
+2
 test dio.tidy
 {"bar": 2}
 {"bar": 2}

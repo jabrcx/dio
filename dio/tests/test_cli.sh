@@ -17,6 +17,10 @@ echo '
 #{"name": "foo"}
 #{"name": "bar"}
 
+echo "test EPIPE recovery"
+./eg.send_infinite | head -n 2 | wc -l
+#2
+
 echo "test dio.tidy"
 echo '
 {"foo": 1, "bar": 2, "zzz": 3}
