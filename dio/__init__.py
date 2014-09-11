@@ -205,53 +205,6 @@ default_out = json_out(out=sys.stdout)
 default_err = json_out(out=sys.stderr)
 
 
-#--- cli
-
-'''
-def cli2(p):
-	"""Run any processor as a standalone cli instance.
-
-	This is for creating the building blocks to create dio piplines in shell.
-
-	:param p: the processor to run
-	:type foo: a generator (a started coroutine)
-
-	This does nothing if p is a None, so, for consistency, ``cli(s())``, where
-	`s` is a source processor, also works.  Since a source is not a coroutine,
-	it fully runs and returns None before cli is entered.
-	"""
-	try:
-		if not isinstance(p, types.GeneratorType):
-			p = p()
-		#if out is a coroutine (rather than a source), it needs input; get it
-		#from the default source
-		if isinstance(p, types.GeneratorType):
-			default_in(out=p)
-	except (GeneratorExit, StopIteration):
-		pass
-	except IOError, e:
-		if e.errno != errno.EPIPE: raise
-
-def cli(p, *args, **kwargs):
-	"""Run any processor as a standalone cli instance.
-
-	This is for creating the building blocks to create dio piplines in shell.
-	"""
-	try:
-		if not isinstance(p, types.GeneratorType):
-			p = p(*args, **kwargs)
-
-		#if out is a coroutine (rather than a source), it needs input; get it
-		#from the default source
-		if isinstance(p, types.GeneratorType):
-			default_in(out=p)
-	except (GeneratorExit, StopIteration):
-		pass
-	except IOError, e:
-		if e.errno != errno.EPIPE: raise
-'''
-
-
 #--- common constructs
 
 @processor
