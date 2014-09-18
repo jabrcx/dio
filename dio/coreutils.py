@@ -45,3 +45,13 @@ def wc(out=None, err=None):
 			count += 1
 	except GeneratorExit:
 		out.send({"count":count})
+
+@processor
+def head(n, out=None, err=None):
+	i = 0
+	while True:
+		d = yield
+		i += 1
+		out.send(d)
+		if i==n:
+			break
