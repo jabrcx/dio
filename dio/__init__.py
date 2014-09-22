@@ -7,7 +7,7 @@
 """lazy dict-based i/o processing pipelines"""
 
 
-import sys, types, functools, errno
+import sys, types, functools, errno, bisect
 import errors
 
 
@@ -341,3 +341,86 @@ def average(out=None, err=None):
 		averages = dict((k,float(v)/counts[k]) for k, v in sums.iteritems())
 		for i in averages.iteritems():
 			out.send(dict((i,)))
+
+@processor
+def min_(n, key, out=None, err=None):
+	"""Emit the n dicts with the max values for key.
+
+	The results are currently in sorted order, but that may change back to
+	input order in the future.
+	"""
+	#FIXME replace this by an efficient algorithm / data structure, like a
+	#binary tree.  The insert/pop operations below are O(n) on result set size
+	#(but at least result set size does not scale with input size).
+
+	#NOTE -- keep this code in sync with max_!!! (probably should be combined)
+
+	results_d = []  #list of result d
+	results_v = []  #list of d[key] for the results
+
+	bubble_value = None  #the current threshold value (inside the bubble)
+
+	try:
+		while True:
+			d = yield
+			v = d[key]
+
+			if v < bubble_value or bubble_value is None:
+				#insert the new value
+				pos = bisect.bisect_left(results_v, v)
+				results_d.insert(pos, d)
+				results_v.insert(pos, v)
+
+				#remove the old bubble value (if necessary)
+				if len(results_v) > n:
+					pos = bisect.bisect_right(results_v, bubble_value)
+					results_d.pop()
+					results_v.pop()
+
+					#set the new bubble value
+					bubble_value = results_v[-1]
+	except GeneratorExit:
+		for d in results_d:
+			out.send(d)
+
+@processor
+def max_(n, key, out=None, err=None):
+	"""Emit the n dicts with the max values for key.
+
+	The results are currently in sorted order, but that may change back to
+	input order in the future.
+	"""
+
+	#FIXME replace this by an efficient algorithm / data structure, like a
+	#binary tree.  The insert/pop operations below are O(n) on result set size
+	#(but at least result set size does not scale with input size).
+
+	#NOTE -- keep this code in sync with min_!!! (probably should be combined)
+
+	results_d = []  #list of result d
+	results_v = []  #list of d[key] for the results
+
+	bubble_value = None  #the current threshold value (inside the bubble)
+
+	try:
+		while True:
+			d = yield
+			v = d[key]
+
+			if v > bubble_value or bubble_value is None:
+				#insert the new value
+				pos = bisect.bisect_right(results_v, v)
+				results_d.insert(pos, d)
+				results_v.insert(pos, v)
+
+				#remove the old bubble value (if necessary)
+				if len(results_v) > n:
+					pos = bisect.bisect_left(results_v, bubble_value)
+					results_d.pop(0)
+					results_v.pop(0)
+
+					#set the new bubble value
+					bubble_value = results_v[0]
+	except GeneratorExit:
+		for d in results_d:
+			out.send(d)
