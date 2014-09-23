@@ -10,19 +10,34 @@ from dio import processor
 
 
 @processor
-def sort(out=None, err=None):
+def sort(keys=[], out=None, err=None):
 	"""The dio analogue to coreutils' sort.
 
-	Assumes each input is a one-item dict.
+	Sorts output by value of the given key.  If key is None, assumes all dicts
+	are one-item, and sorts by the value regardless of key.
 	"""
-	result = []
+	if len(keys) == 0:
+		key = None
+	elif len(keys) == 1:
+		key = keys[0]
+	else:
+		raise NotImplementedError(
+			"sorting by more than one key is not yet implemented"
+		)
+
+	if key is not None:
+		keyf = lambda d: d[key]
+	else:
+		keyf = lambda d: d.itervalues().next()
+
+	results = []
 	try:
 		while True:
 			d = yield
-			result.append(d)
+			results.append(d)
 	except GeneratorExit:
-		result.sort(key=lambda d: d.itervalues().next())
-		for d in result:
+		results.sort(key = keyf)
+		for d in results:
 			out.send(d)
 
 @processor

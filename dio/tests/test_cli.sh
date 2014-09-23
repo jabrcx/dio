@@ -49,12 +49,12 @@ echo '
 echo "test dio.sort"
 echo '
 {"foo": 3}
-{"bar": 5}
-{"zzz": 1}
-' | dio.sort
-#{"zzz": 1}
+{"foo": 5}
+{"foo": 1}
+' | dio.sort foo
+#{"foo": 1}
 #{"foo": 3}
-#{"bar": 5}
+#{"foo": 5}
 
 echo "test dio.uniq"
 echo '

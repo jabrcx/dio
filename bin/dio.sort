@@ -3,7 +3,11 @@
 # Copyright (c) 2014, John A. Brunelle
 # All rights reserved.
 
+import sys
+
 from dio import default_in
 from dio.coreutils import sort
 
-default_in(out=sort())
+keys = sys.argv[1:]  #TODO this just a hack until there is systematic arg parsing
+
+default_in(out=sort(keys))

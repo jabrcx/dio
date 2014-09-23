@@ -12,9 +12,9 @@ test eg.cli_of_python_pipeline
 {"x": 15}
 {"x": 20}
 test dio.sort
-{"zzz": 1}
+{"foo": 1}
 {"foo": 3}
-{"bar": 5}
+{"foo": 5}
 test dio.uniq
 {"name": "foo"}
 {"name": "bar"}
