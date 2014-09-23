@@ -10,7 +10,7 @@ from dio import processor
 
 
 @processor
-def sort(keys=[], out=None, err=None):
+def sort(keys=[], reverse=False, out=None, err=None):
 	"""The dio analogue to coreutils' sort.
 
 	Sorts output by value of the given key.  If key is None, assumes all dicts
@@ -36,7 +36,7 @@ def sort(keys=[], out=None, err=None):
 			d = yield
 			results.append(d)
 	except GeneratorExit:
-		results.sort(key = keyf)
+		results.sort(key=keyf, reverse=reverse)
 		for d in results:
 			out.send(d)
 
