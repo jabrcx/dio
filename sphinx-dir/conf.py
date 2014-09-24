@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 #
 # dio documentation build configuration file, created by
-# sphinx-quickstart on Mon Aug  4 00:36:00 2014.
+# sphinx-quickstart on Wed Sep 24 09:43:00 2014.
 #
 # This file is execfile()d with the current directory set to its
 # containing dir.

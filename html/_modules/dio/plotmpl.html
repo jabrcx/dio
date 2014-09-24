@@ -1,0 +1,230 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>dio.plotmpl &mdash; dio  documentation</title>
+    
+    <link rel="stylesheet" href="../../_static/default.css" type="text/css" />
+    <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../../',
+        VERSION:     '',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="../../_static/jquery.js"></script>
+    <script type="text/javascript" src="../../_static/underscore.js"></script>
+    <script type="text/javascript" src="../../_static/doctools.js"></script>
+    <link rel="top" title="dio  documentation" href="../../index.html" />
+    <link rel="up" title="dio" href="../dio.html" /> 
+  </head>
+  <body>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li><a href="../../index.html">dio  documentation</a> &raquo;</li>
+          <li><a href="../index.html" >Module code</a> &raquo;</li>
+          <li><a href="../dio.html" accesskey="U">dio</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body">
+            
+  <h1>Source code for dio.plotmpl</h1><div class="highlight"><pre>
+<span class="c"># -*- coding: utf-8 -*-</span>
+
+<span class="c"># Copyright (c) 2014, John A. Brunelle</span>
+<span class="c"># All rights reserved.</span>
+
+<span class="sd">&quot;&quot;&quot;plotting with matplotlib&quot;&quot;&quot;</span>
+
+<span class="kn">from</span> <span class="nn">dio</span> <span class="kn">import</span> <span class="n">processor</span>
+
+<span class="n">DEFAULT_FIGURE_SIZE</span> <span class="o">=</span> <span class="p">(</span><span class="mi">5</span><span class="p">,</span><span class="mi">5</span><span class="p">)</span>
+
+<span class="nd">@processor</span>
+<div class="viewcode-block" id="pie"><a class="viewcode-back" href="../../dio.html#dio.plotmpl.pie">[docs]</a><span class="k">def</span> <span class="nf">pie</span><span class="p">(</span><span class="n">label_k</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">value_k</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">out</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">err</span><span class="o">=</span><span class="bp">None</span><span class="p">):</span>
+	<span class="sd">&quot;&quot;&quot;Make a pie chart.&quot;&quot;&quot;</span>
+
+	<span class="kn">import</span> <span class="nn">matplotlib.pyplot</span> <span class="kn">as</span> <span class="nn">plt</span>
+
+	<span class="c">#settings</span>
+	<span class="n">figsize</span> <span class="o">=</span> <span class="n">DEFAULT_FIGURE_SIZE</span>  <span class="c">#(w,h) in inches</span>
+	<span class="n">threshold_percentage</span> <span class="o">=</span> <span class="bp">None</span>  <span class="c">#None or a number in the range (0,100)</span>
+	<span class="n">other_label</span> <span class="o">=</span> <span class="s">&#39;OTHER&#39;</span>  <span class="c">#applicable iff threshold_percentage is not None</span>
+
+	<span class="c">#the data accumulator</span>
+	<span class="n">pie</span> <span class="o">=</span> <span class="p">{}</span>
+
+	<span class="k">try</span><span class="p">:</span>
+		<span class="k">while</span> <span class="bp">True</span><span class="p">:</span>
+			<span class="n">d</span> <span class="o">=</span> <span class="k">yield</span>
+			<span class="k">if</span> <span class="n">label_k</span> <span class="ow">is</span> <span class="ow">not</span> <span class="bp">None</span> <span class="ow">and</span> <span class="n">value_k</span> <span class="ow">is</span> <span class="ow">not</span> <span class="bp">None</span><span class="p">:</span>
+				<span class="n">pie</span><span class="p">[</span><span class="n">d</span><span class="p">[</span><span class="n">label_k</span><span class="p">]]</span> <span class="o">=</span> <span class="n">d</span><span class="p">[</span><span class="n">value_k</span><span class="p">]</span>
+			<span class="k">else</span><span class="p">:</span>
+				<span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">d</span><span class="o">.</span><span class="n">iteritems</span><span class="p">():</span>
+					<span class="n">pie</span><span class="p">[</span><span class="n">k</span><span class="p">]</span> <span class="o">=</span> <span class="n">v</span>
+	<span class="k">except</span> <span class="ne">GeneratorExit</span><span class="p">:</span>
+		<span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">pie</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+			<span class="c">#collapse small slices into one, if applicable</span>
+			<span class="k">if</span> <span class="n">threshold_percentage</span> <span class="ow">is</span> <span class="ow">not</span> <span class="bp">None</span><span class="p">:</span>
+				<span class="n">total_value</span> <span class="o">=</span> <span class="nb">sum</span><span class="p">(</span><span class="n">pie</span><span class="o">.</span><span class="n">values</span><span class="p">())</span>
+				<span class="n">threshold_value</span> <span class="o">=</span> <span class="n">threshold_percentage</span> <span class="o">*</span> <span class="n">total_value</span> <span class="o">/</span> <span class="mf">100.</span>
+
+				<span class="n">other_value</span> <span class="o">=</span> <span class="mi">0</span>
+				<span class="k">for</span> <span class="n">key</span> <span class="ow">in</span> <span class="n">pie</span><span class="o">.</span><span class="n">keys</span><span class="p">():</span>
+					<span class="k">if</span> <span class="n">pie</span><span class="p">[</span><span class="n">key</span><span class="p">]</span> <span class="o">&lt;</span> <span class="n">threshold_value</span><span class="p">:</span>
+						<span class="n">other_value</span> <span class="o">+=</span> <span class="n">pie</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="n">key</span><span class="p">)</span>
+
+				<span class="k">if</span> <span class="n">other_value</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+					<span class="n">pie</span><span class="p">[</span><span class="n">other_label</span><span class="p">]</span> <span class="o">=</span> <span class="n">other_value</span>
+
+			<span class="c">#sort order for the slices</span>
+			<span class="k">def</span> <span class="nf">piecmp</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">):</span>
+				<span class="sd">&quot;&quot;&quot;cmp for sorting pie slices.</span>
+
+<span class="sd">				Both x and y are tuples (key, value).</span>
+
+<span class="sd">				This sorts by value, except puts the &#39;OTHER&#39; entry last</span>
+<span class="sd">				regardless of its value.</span>
+<span class="sd">				&quot;&quot;&quot;</span>
+				<span class="k">if</span> <span class="n">x</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">==</span> <span class="n">other_label</span><span class="p">:</span>
+					<span class="k">return</span> <span class="o">-</span><span class="mi">1</span>
+				<span class="k">if</span> <span class="n">y</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">==</span> <span class="n">other_label</span><span class="p">:</span>
+					<span class="k">return</span> <span class="mi">1</span>
+				<span class="k">return</span> <span class="nb">cmp</span><span class="p">(</span><span class="n">x</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="n">y</span><span class="p">[</span><span class="mi">1</span><span class="p">])</span>
+
+			<span class="c">#numeric labels on the slices</span>
+			<span class="k">def</span> <span class="nf">percent</span><span class="p">(</span><span class="n">x</span><span class="p">):</span>
+				<span class="sd">&quot;&quot;&quot;Convert float x to a string label.&quot;&quot;&quot;</span>
+				<span class="k">return</span> <span class="s">&#39;</span><span class="si">%d%%</span><span class="s">&#39;</span> <span class="o">%</span> <span class="p">(</span><span class="n">x</span> <span class="o">+</span> <span class="mf">0.5</span><span class="p">)</span>
+
+			<span class="c">#convert to matplotlib&#39;s format</span>
+			<span class="n">labels</span><span class="p">,</span> <span class="n">values</span> <span class="o">=</span> <span class="nb">zip</span><span class="p">(</span><span class="o">*</span><span class="nb">sorted</span><span class="p">(</span><span class="n">pie</span><span class="o">.</span><span class="n">iteritems</span><span class="p">(),</span> <span class="n">piecmp</span><span class="p">))</span>
+
+
+			<span class="c">#--- actual plotting</span>
+
+			<span class="n">fig</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">figure</span><span class="p">(</span><span class="n">figsize</span><span class="o">=</span><span class="n">figsize</span><span class="p">)</span>
+			<span class="n">ax</span> <span class="o">=</span> <span class="n">fig</span><span class="o">.</span><span class="n">gca</span><span class="p">()</span>
+
+			<span class="c">#http://matplotlib.org/api/pyplot_api.html#matplotlib.pyplot.pie</span>
+			<span class="n">ax</span><span class="o">.</span><span class="n">pie</span><span class="p">(</span>
+				<span class="n">values</span><span class="p">,</span>
+				<span class="n">labels</span><span class="o">=</span><span class="n">labels</span><span class="p">,</span>
+				<span class="n">autopct</span><span class="o">=</span><span class="n">percent</span><span class="p">,</span>
+			<span class="p">)</span>
+
+			<span class="c">##no legend option, yet</span>
+			<span class="c">#ax.legend()</span>
+
+			<span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
+</div>
+<span class="nd">@processor</span>
+<div class="viewcode-block" id="histogram"><a class="viewcode-back" href="../../dio.html#dio.plotmpl.histogram">[docs]</a><span class="k">def</span> <span class="nf">histogram</span><span class="p">(</span><span class="n">out</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">err</span><span class="o">=</span><span class="bp">None</span><span class="p">):</span>
+	<span class="sd">&quot;&quot;&quot;Make a histogram.&quot;&quot;&quot;</span>
+
+	<span class="kn">import</span> <span class="nn">numpy</span> <span class="kn">as</span> <span class="nn">np</span>
+	<span class="kn">import</span> <span class="nn">matplotlib.pyplot</span> <span class="kn">as</span> <span class="nn">plt</span>
+
+	<span class="c">#settings</span>
+	<span class="n">figsize</span> <span class="o">=</span> <span class="n">DEFAULT_FIGURE_SIZE</span>  <span class="c">#(w,h) in inches</span>
+	<span class="n">nbins</span> <span class="o">=</span> <span class="mi">10</span>
+
+	<span class="c">#the data accumulator(s)</span>
+	<span class="n">values</span> <span class="o">=</span> <span class="p">{}</span>
+
+	<span class="k">try</span><span class="p">:</span>
+		<span class="k">while</span> <span class="bp">True</span><span class="p">:</span>
+			<span class="n">d</span> <span class="o">=</span> <span class="k">yield</span>
+			<span class="k">for</span> <span class="n">k</span> <span class="ow">in</span> <span class="n">d</span><span class="p">:</span>
+				<span class="k">try</span><span class="p">:</span>
+					<span class="n">values</span><span class="p">[</span><span class="n">k</span><span class="p">]</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">d</span><span class="p">[</span><span class="n">k</span><span class="p">])</span>
+				<span class="k">except</span> <span class="ne">KeyError</span><span class="p">:</span>
+					<span class="n">values</span><span class="p">[</span><span class="n">k</span><span class="p">]</span> <span class="o">=</span> <span class="p">[</span><span class="n">d</span><span class="p">[</span><span class="n">k</span><span class="p">],]</span>
+	<span class="k">except</span> <span class="ne">GeneratorExit</span><span class="p">:</span>
+		<span class="k">for</span> <span class="n">k</span> <span class="ow">in</span> <span class="n">values</span><span class="o">.</span><span class="n">keys</span><span class="p">():</span>
+			<span class="c">#using numpy.histogram instead of pyplot.hist directly so we get</span>
+			<span class="c">#numbers for textual output, too</span>
+
+			<span class="n">hist</span><span class="p">,</span> <span class="n">hist_bin_edges</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">histogram</span><span class="p">(</span><span class="n">values</span><span class="p">[</span><span class="n">k</span><span class="p">],</span> <span class="n">nbins</span><span class="p">)</span>
+
+			<span class="n">bin_width</span> <span class="o">=</span> <span class="p">(</span><span class="n">hist_bin_edges</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span><span class="o">-</span><span class="n">hist_bin_edges</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span><span class="o">/</span><span class="nb">len</span><span class="p">(</span><span class="n">hist</span><span class="p">)</span>
+
+
+			<span class="c">#--- actual plotting</span>
+			<span class="n">fig</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">figure</span><span class="p">(</span><span class="n">figsize</span><span class="o">=</span><span class="n">figsize</span><span class="p">)</span>
+			<span class="n">ax</span> <span class="o">=</span> <span class="n">fig</span><span class="o">.</span><span class="n">gca</span><span class="p">()</span>
+
+			<span class="c">#http://matplotlib.org/api/pyplot_api.html#matplotlib.pyplot.bar</span>
+			<span class="n">ax</span><span class="o">.</span><span class="n">bar</span><span class="p">(</span>
+				<span class="n">hist_bin_edges</span><span class="p">[:</span><span class="o">-</span><span class="mi">1</span><span class="p">],</span>
+				<span class="n">hist</span><span class="p">,</span>
+				<span class="n">width</span><span class="o">=</span><span class="n">bin_width</span><span class="p">,</span>
+			<span class="p">)</span>
+
+			<span class="c">#I don&#39;t like how the highest bar is flush with the plot top by default</span>
+			<span class="n">ax</span><span class="o">.</span><span class="n">set_ylim</span><span class="p">(</span><span class="n">top</span><span class="o">=</span><span class="mf">1.1</span><span class="o">*</span><span class="nb">max</span><span class="p">(</span><span class="n">hist</span><span class="p">))</span>
+
+			<span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">()</span></div>
+</pre></div>
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar">
+        <div class="sphinxsidebarwrapper">
+<div id="searchbox" style="display: none">
+  <h3>Quick search</h3>
+    <form class="search" action="../../search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li><a href="../../index.html">dio  documentation</a> &raquo;</li>
+          <li><a href="../index.html" >Module code</a> &raquo;</li>
+          <li><a href="../dio.html" >dio</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer">
+        &copy; Copyright 2014, John A. Brunelle.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.2.2.
+    </div>
+  </body>
+</html>

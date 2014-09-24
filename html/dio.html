@@ -53,6 +53,107 @@
 <div class="section" id="submodules">
 <h2>Submodules<a class="headerlink" href="#submodules" title="Permalink to this headline">¶</a></h2>
 </div>
+<div class="section" id="module-dio.coreutils">
+<span id="dio-coreutils-module"></span><h2>dio.coreutils module<a class="headerlink" href="#module-dio.coreutils" title="Permalink to this headline">¶</a></h2>
+<p>processors analogous to GNU coreutils</p>
+<dl class="function">
+<dt id="dio.coreutils.head">
+<tt class="descclassname">dio.coreutils.</tt><tt class="descname">head</tt><big>(</big><em>*args</em>, <em>**kwargs</em><big>)</big><a class="reference internal" href="_modules/dio/coreutils.html#head"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#dio.coreutils.head" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="function">
+<dt id="dio.coreutils.sort">
+<tt class="descclassname">dio.coreutils.</tt><tt class="descname">sort</tt><big>(</big><em>*args</em>, <em>**kwargs</em><big>)</big><a class="reference internal" href="_modules/dio/coreutils.html#sort"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#dio.coreutils.sort" title="Permalink to this definition">¶</a></dt>
+<dd><p>The dio analogue to coreutils&#8217; sort.</p>
+<p>Sorts output by value of the given key.  If key is None, assumes all dicts
+are one-item, and sorts by the value regardless of key.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="dio.coreutils.uniq">
+<tt class="descclassname">dio.coreutils.</tt><tt class="descname">uniq</tt><big>(</big><em>*args</em>, <em>**kwargs</em><big>)</big><a class="reference internal" href="_modules/dio/coreutils.html#uniq"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#dio.coreutils.uniq" title="Permalink to this definition">¶</a></dt>
+<dd><p>The dio analogue to coreutils&#8217; uniq.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="dio.coreutils.wc">
+<tt class="descclassname">dio.coreutils.</tt><tt class="descname">wc</tt><big>(</big><em>*args</em>, <em>**kwargs</em><big>)</big><a class="reference internal" href="_modules/dio/coreutils.html#wc"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#dio.coreutils.wc" title="Permalink to this definition">¶</a></dt>
+<dd><p>The dio analogue to coreutils&#8217; wc.</p>
+</dd></dl>
+
+</div>
+<div class="section" id="module-dio.errors">
+<span id="dio-errors-module"></span><h2>dio.errors module<a class="headerlink" href="#module-dio.errors" title="Permalink to this headline">¶</a></h2>
+<p>error handling</p>
+<p>This could be more powerful by holding onto the exception and traceback 
+objects, and extending text data from those, but for now I&#8217;m keeping this 
+simple, with JSON-serializable data.  Still, an Error is a LazyDict, since I&#8217;m 
+expecting at least a bit more functionality.</p>
+<dl class="class">
+<dt id="dio.errors.Error">
+<em class="property">class </em><tt class="descclassname">dio.errors.</tt><tt class="descname">Error</tt><a class="reference internal" href="_modules/dio/errors.html#Error"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#dio.errors.Error" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#dio.lazydict.LazyDict" title="dio.lazydict.LazyDict"><tt class="xref py py-class docutils literal"><span class="pre">dio.lazydict.LazyDict</span></tt></a></p>
+<dl class="attribute">
+<dt id="dio.errors.Error.extensions">
+<tt class="descname">extensions</tt><em class="property"> = [&lt;(error)-&gt;(exception_type)&gt;, &lt;(error)-&gt;(exception_message)&gt;]</em><a class="headerlink" href="#dio.errors.Error.extensions" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="function">
+<dt id="dio.errors.e2d">
+<tt class="descclassname">dio.errors.</tt><tt class="descname">e2d</tt><big>(</big><em>e</em><big>)</big><a class="reference internal" href="_modules/dio/errors.html#e2d"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#dio.errors.e2d" title="Permalink to this definition">¶</a></dt>
+<dd><p>Convert an exception to a dio dict.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>e</strong> (<em>Exception</em>) &#8211; an exception object</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body">an dio dict</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body">Error</td>
+</tr>
+</tbody>
+</table>
+<p>Note that this must be called during the handling of the given exception, 
+since it grabs further information from the current stack frame and assumes
+it pertains to the given exception.</p>
+</dd></dl>
+
+<dl class="class">
+<dt id="dio.errors.x_error_to_exception_message">
+<em class="property">class </em><tt class="descclassname">dio.errors.</tt><tt class="descname">x_error_to_exception_message</tt><a class="reference internal" href="_modules/dio/errors.html#x_error_to_exception_message"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#dio.errors.x_error_to_exception_message" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#dio.lazydict.Extension" title="dio.lazydict.Extension"><tt class="xref py py-class docutils literal"><span class="pre">dio.lazydict.Extension</span></tt></a></p>
+<dl class="attribute">
+<dt id="dio.errors.x_error_to_exception_message.source">
+<tt class="descname">source</tt><em class="property"> = ('error',)</em><a class="headerlink" href="#dio.errors.x_error_to_exception_message.source" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="dio.errors.x_error_to_exception_message.target">
+<tt class="descname">target</tt><em class="property"> = ('exception_message',)</em><a class="headerlink" href="#dio.errors.x_error_to_exception_message.target" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="dio.errors.x_error_to_exception_type">
+<em class="property">class </em><tt class="descclassname">dio.errors.</tt><tt class="descname">x_error_to_exception_type</tt><a class="reference internal" href="_modules/dio/errors.html#x_error_to_exception_type"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#dio.errors.x_error_to_exception_type" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#dio.lazydict.Extension" title="dio.lazydict.Extension"><tt class="xref py py-class docutils literal"><span class="pre">dio.lazydict.Extension</span></tt></a></p>
+<dl class="attribute">
+<dt id="dio.errors.x_error_to_exception_type.source">
+<tt class="descname">source</tt><em class="property"> = ('error',)</em><a class="headerlink" href="#dio.errors.x_error_to_exception_type.source" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="dio.errors.x_error_to_exception_type.target">
+<tt class="descname">target</tt><em class="property"> = ('exception_type',)</em><a class="headerlink" href="#dio.errors.x_error_to_exception_type.target" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+</div>
 <div class="section" id="module-dio.lazydict">
 <span id="dio-lazydict-module"></span><h2>dio.lazydict module<a class="headerlink" href="#module-dio.lazydict" title="Permalink to this headline">¶</a></h2>
 <p>a dict with transparent, on-demand computation and optimizable memoization</p>
@@ -137,6 +238,22 @@ into...</p>
 __contains__(), instead.</p>
 </dd></dl>
 
+</dd></dl>
+
+</div>
+<div class="section" id="module-dio.plotmpl">
+<span id="dio-plotmpl-module"></span><h2>dio.plotmpl module<a class="headerlink" href="#module-dio.plotmpl" title="Permalink to this headline">¶</a></h2>
+<p>plotting with matplotlib</p>
+<dl class="function">
+<dt id="dio.plotmpl.histogram">
+<tt class="descclassname">dio.plotmpl.</tt><tt class="descname">histogram</tt><big>(</big><em>*args</em>, <em>**kwargs</em><big>)</big><a class="reference internal" href="_modules/dio/plotmpl.html#histogram"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#dio.plotmpl.histogram" title="Permalink to this definition">¶</a></dt>
+<dd><p>Make a histogram.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="dio.plotmpl.pie">
+<tt class="descclassname">dio.plotmpl.</tt><tt class="descname">pie</tt><big>(</big><em>*args</em>, <em>**kwargs</em><big>)</big><a class="reference internal" href="_modules/dio/plotmpl.html#pie"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#dio.plotmpl.pie" title="Permalink to this definition">¶</a></dt>
+<dd><p>Make a pie chart.</p>
 </dd></dl>
 
 </div>
@@ -326,7 +443,10 @@ lower line) than the &#64;processor decorator.</p>
   <ul>
 <li><a class="reference internal" href="#">dio package</a><ul>
 <li><a class="reference internal" href="#submodules">Submodules</a></li>
+<li><a class="reference internal" href="#module-dio.coreutils">dio.coreutils module</a></li>
+<li><a class="reference internal" href="#module-dio.errors">dio.errors module</a></li>
 <li><a class="reference internal" href="#module-dio.lazydict">dio.lazydict module</a></li>
+<li><a class="reference internal" href="#module-dio.plotmpl">dio.plotmpl module</a></li>
 <li><a class="reference internal" href="#module-dio">Module contents</a></li>
 </ul>
 </li>
