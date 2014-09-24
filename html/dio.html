@@ -143,112 +143,137 @@ __contains__(), instead.</p>
 <div class="section" id="module-dio">
 <span id="module-contents"></span><h2>Module contents<a class="headerlink" href="#module-dio" title="Permalink to this headline">¶</a></h2>
 <p>lazy dict-based i/o processing pipelines</p>
-<dl class="function">
-<dt id="dio.apply">
-<tt class="descclassname">dio.</tt><tt class="descname">apply</tt><big>(</big><em>*args</em>, <em>**kwargs</em><big>)</big><a class="reference internal" href="_modules/dio.html#apply"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#dio.apply" title="Permalink to this definition">¶</a></dt>
-<dd><p>For each sent d, send all f(d).</p>
-<table class="docutils field-list" frame="void" rules="none">
-<col class="field-name" />
-<col class="field-body" />
-<tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>f</strong> &#8211; a callable that accepts a single input dict and yields zero or
-more output dicts.</td>
-</tr>
-</tbody>
-</table>
-<div class="admonition note">
-<p class="first admonition-title">Note</p>
-<p class="last">this overwrites the built-in <a href="#id15"><span class="problematic" id="id16">`</span></a>apply&#8217;, but that&#8217;s been deprecated since
-2.3.</p>
-</div>
+<dl class="class">
+<dt id="dio.NullHandler">
+<em class="property">class </em><tt class="descclassname">dio.</tt><tt class="descname">NullHandler</tt><big>(</big><em>level=0</em><big>)</big><a class="reference internal" href="_modules/dio.html#NullHandler"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#dio.NullHandler" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <tt class="xref py py-class docutils literal"><span class="pre">logging.Handler</span></tt></p>
+<dl class="method">
+<dt id="dio.NullHandler.emit">
+<tt class="descname">emit</tt><big>(</big><em>record</em><big>)</big><a class="reference internal" href="_modules/dio.html#NullHandler.emit"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#dio.NullHandler.emit" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
 </dd></dl>
 
 <dl class="function">
-<dt id="dio.cli">
-<tt class="descclassname">dio.</tt><tt class="descname">cli</tt><big>(</big><em>p</em><big>)</big><a class="reference internal" href="_modules/dio.html#cli"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#dio.cli" title="Permalink to this definition">¶</a></dt>
-<dd><p>Run any processor as a standalone cli instance in a shell pipeline.</p>
+<dt id="dio.apply">
+<tt class="descclassname">dio.</tt><tt class="descname">apply</tt><big>(</big><em>*args</em>, <em>**kwargs</em><big>)</big><a class="reference internal" href="_modules/dio.html#apply"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#dio.apply" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="function">
+<dt id="dio.average">
+<tt class="descclassname">dio.</tt><tt class="descname">average</tt><big>(</big><em>*args</em>, <em>**kwargs</em><big>)</big><a class="reference internal" href="_modules/dio.html#average"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#dio.average" title="Permalink to this definition">¶</a></dt>
+<dd><p>Sum values for each key.</p>
 </dd></dl>
+
+<dl class="function">
+<dt id="dio.buffer_in">
+<tt class="descclassname">dio.</tt><tt class="descname">buffer_in</tt><big>(</big><em>*args</em>, <em>**kwargs</em><big>)</big><a class="reference internal" href="_modules/dio.html#buffer_in"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#dio.buffer_in" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="function">
+<dt id="dio.buffer_out">
+<tt class="descclassname">dio.</tt><tt class="descname">buffer_out</tt><big>(</big><em>*args</em>, <em>**kwargs</em><big>)</big><a class="reference internal" href="_modules/dio.html#buffer_out"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#dio.buffer_out" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
 
 <dl class="function">
 <dt id="dio.count">
 <tt class="descclassname">dio.</tt><tt class="descname">count</tt><big>(</big><em>*args</em>, <em>**kwargs</em><big>)</big><a class="reference internal" href="_modules/dio.html#count"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#dio.count" title="Permalink to this definition">¶</a></dt>
-<dd><p>The dio processor analogous of coreutils&#8217; wc.</p>
+<dd><p>Count appearances of each key.</p>
 </dd></dl>
 
 <dl class="function">
 <dt id="dio.default_in">
-<tt class="descclassname">dio.</tt><tt class="descname">default_in</tt><big>(</big><em>inn=&lt;open file '&lt;stdin&gt;'</em>, <em>mode 'r' at 0x2aba77bfa0c0&gt;</em>, <em>out=None</em>, <em>err=None</em><big>)</big><a class="headerlink" href="#dio.default_in" title="Permalink to this definition">¶</a></dt>
-<dd></dd></dl>
-
-<dl class="function">
-<dt id="dio.e2d">
-<tt class="descclassname">dio.</tt><tt class="descname">e2d</tt><big>(</big><em>e</em><big>)</big><a class="reference internal" href="_modules/dio.html#e2d"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#dio.e2d" title="Permalink to this definition">¶</a></dt>
-<dd><p>Convert an Exception to a LazyDict.</p>
-<p>#FIXME this needs a lot of work &#8211; it&#8217;s really just a placeholder for now.</p>
-</dd></dl>
-
-<dl class="function">
-<dt id="dio.err_accumulator">
-<tt class="descclassname">dio.</tt><tt class="descname">err_accumulator</tt><big>(</big><em>*args</em>, <em>**kwargs</em><big>)</big><a class="reference internal" href="_modules/dio.html#err_accumulator"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#dio.err_accumulator" title="Permalink to this definition">¶</a></dt>
-<dd></dd></dl>
-
-<dl class="function">
-<dt id="dio.err_printer">
-<tt class="descclassname">dio.</tt><tt class="descname">err_printer</tt><big>(</big><em>*args</em>, <em>**kwargs</em><big>)</big><a class="reference internal" href="_modules/dio.html#err_printer"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#dio.err_printer" title="Permalink to this definition">¶</a></dt>
+<tt class="descclassname">dio.</tt><tt class="descname">default_in</tt><big>(</big><em>*args</em>, <em>**kwargs</em><big>)</big><a class="headerlink" href="#dio.default_in" title="Permalink to this definition">¶</a></dt>
 <dd></dd></dl>
 
 <dl class="function">
 <dt id="dio.filter">
 <tt class="descclassname">dio.</tt><tt class="descname">filter</tt><big>(</big><em>*args</em>, <em>**kwargs</em><big>)</big><a class="reference internal" href="_modules/dio.html#filter"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#dio.filter" title="Permalink to this definition">¶</a></dt>
-<dd><p>Output input dicts iff f(d) is True.</p>
-</dd></dl>
+<dd></dd></dl>
 
 <dl class="function">
 <dt id="dio.identity">
 <tt class="descclassname">dio.</tt><tt class="descname">identity</tt><big>(</big><em>*args</em>, <em>**kwargs</em><big>)</big><a class="reference internal" href="_modules/dio.html#identity"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#dio.identity" title="Permalink to this definition">¶</a></dt>
-<dd><p>Output all input dicts.</p>
-</dd></dl>
-
-<dl class="function">
-<dt id="dio.in_json">
-<tt class="descclassname">dio.</tt><tt class="descname">in_json</tt><big>(</big><em>inn=&lt;open file '&lt;stdin&gt;'</em>, <em>mode 'r' at 0x2aba77bfa0c0&gt;</em>, <em>out=None</em>, <em>err=None</em><big>)</big><a class="reference internal" href="_modules/dio.html#in_json"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#dio.in_json" title="Permalink to this definition">¶</a></dt>
 <dd></dd></dl>
 
 <dl class="function">
-<dt id="dio.in_pickle">
-<tt class="descclassname">dio.</tt><tt class="descname">in_pickle</tt><big>(</big><em>inn=&lt;open file '&lt;stdin&gt;'</em>, <em>mode 'r' at 0x2aba77bfa0c0&gt;</em>, <em>out=None</em>, <em>err=None</em><big>)</big><a class="reference internal" href="_modules/dio.html#in_pickle"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#dio.in_pickle" title="Permalink to this definition">¶</a></dt>
+<dt id="dio.json_in">
+<tt class="descclassname">dio.</tt><tt class="descname">json_in</tt><big>(</big><em>*args</em>, <em>**kwargs</em><big>)</big><a class="reference internal" href="_modules/dio.html#json_in"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#dio.json_in" title="Permalink to this definition">¶</a></dt>
 <dd></dd></dl>
 
 <dl class="function">
-<dt id="dio.out_accumulator">
-<tt class="descclassname">dio.</tt><tt class="descname">out_accumulator</tt><big>(</big><em>*args</em>, <em>**kwargs</em><big>)</big><a class="reference internal" href="_modules/dio.html#out_accumulator"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#dio.out_accumulator" title="Permalink to this definition">¶</a></dt>
+<dt id="dio.json_out">
+<tt class="descclassname">dio.</tt><tt class="descname">json_out</tt><big>(</big><em>*args</em>, <em>**kwargs</em><big>)</big><a class="reference internal" href="_modules/dio.html#json_out"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#dio.json_out" title="Permalink to this definition">¶</a></dt>
 <dd></dd></dl>
 
 <dl class="function">
-<dt id="dio.out_json">
-<tt class="descclassname">dio.</tt><tt class="descname">out_json</tt><big>(</big><em>*args</em>, <em>**kwargs</em><big>)</big><a class="reference internal" href="_modules/dio.html#out_json"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#dio.out_json" title="Permalink to this definition">¶</a></dt>
-<dd><p>like other sinks, out and err should be file-like objects</p>
+<dt id="dio.max_">
+<tt class="descclassname">dio.</tt><tt class="descname">max_</tt><big>(</big><em>*args</em>, <em>**kwargs</em><big>)</big><a class="reference internal" href="_modules/dio.html#max_"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#dio.max_" title="Permalink to this definition">¶</a></dt>
+<dd><p>Emit the n dicts with the max values for key.</p>
+<p>The results are currently in sorted order, but that may change back to
+input order in the future.</p>
 </dd></dl>
 
 <dl class="function">
-<dt id="dio.out_pickle">
-<tt class="descclassname">dio.</tt><tt class="descname">out_pickle</tt><big>(</big><em>*args</em>, <em>**kwargs</em><big>)</big><a class="reference internal" href="_modules/dio.html#out_pickle"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#dio.out_pickle" title="Permalink to this definition">¶</a></dt>
-<dd><p>like other sinks, out and err should be file-like objects</p>
+<dt id="dio.min_">
+<tt class="descclassname">dio.</tt><tt class="descname">min_</tt><big>(</big><em>*args</em>, <em>**kwargs</em><big>)</big><a class="reference internal" href="_modules/dio.html#min_"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#dio.min_" title="Permalink to this definition">¶</a></dt>
+<dd><p>Emit the n dicts with the max values for key.</p>
+<p>The results are currently in sorted order, but that may change back to
+input order in the future.</p>
 </dd></dl>
 
 <dl class="function">
-<dt id="dio.out_printer">
-<tt class="descclassname">dio.</tt><tt class="descname">out_printer</tt><big>(</big><em>*args</em>, <em>**kwargs</em><big>)</big><a class="reference internal" href="_modules/dio.html#out_printer"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#dio.out_printer" title="Permalink to this definition">¶</a></dt>
+<dt id="dio.pickle_in">
+<tt class="descclassname">dio.</tt><tt class="descname">pickle_in</tt><big>(</big><em>*args</em>, <em>**kwargs</em><big>)</big><a class="reference internal" href="_modules/dio.html#pickle_in"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#dio.pickle_in" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="function">
+<dt id="dio.pickle_out">
+<tt class="descclassname">dio.</tt><tt class="descname">pickle_out</tt><big>(</big><em>*args</em>, <em>**kwargs</em><big>)</big><a class="reference internal" href="_modules/dio.html#pickle_out"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#dio.pickle_out" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="function">
+<dt id="dio.post_deserialize">
+<tt class="descclassname">dio.</tt><tt class="descname">post_deserialize</tt><big>(</big><em>d</em><big>)</big><a class="reference internal" href="_modules/dio.html#post_deserialize"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#dio.post_deserialize" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="function">
+<dt id="dio.pre_serialize">
+<tt class="descclassname">dio.</tt><tt class="descname">pre_serialize</tt><big>(</big><em>d</em><big>)</big><a class="reference internal" href="_modules/dio.html#pre_serialize"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#dio.pre_serialize" title="Permalink to this definition">¶</a></dt>
 <dd></dd></dl>
 
 <dl class="function">
 <dt id="dio.processor">
 <tt class="descclassname">dio.</tt><tt class="descname">processor</tt><big>(</big><em>f</em><big>)</big><a class="reference internal" href="_modules/dio.html#processor"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#dio.processor" title="Permalink to this definition">¶</a></dt>
-<dd><p>Decorate a processing function.</p>
-<p>This is for extended generator functions that get sent input and send
-output.  This sets up its i/o and primes it such that it&#8217;s ready to be sent
-input.</p>
+<dd><p>Turn a processing function into a pipline participator.</p>
+<p>This serves two purposes:</p>
+<ol class="arabic">
+<li><p class="first">This assigns out and err, which all processors must expose as keyword
+arguments, to the global default instances if no other value has been
+given.  This accomplishes later binding than if they were ordinary
+defaults in the original function definitions.</p>
+</li>
+<li><p class="first">Most processors are coroutines (extended generators) that get sent
+input.  If f is a coroutine, this primes the coroutine so that it runs
+until its first yield and is ready to get sent real input; this returns
+the coroutine (generator object) for further use.</p>
+<p>This is irrelevant for sources &#8211; plain functions that don&#8217;t get sent
+any input.  In that case, calling the decorated function calls the
+original function, which fully executes it, and there is nothing left to
+use (this returns None).</p>
+</li>
+</ol>
 </dd></dl>
+
+<dl class="function">
+<dt id="dio.repr_in">
+<tt class="descclassname">dio.</tt><tt class="descname">repr_in</tt><big>(</big><em>*args</em>, <em>**kwargs</em><big>)</big><a class="reference internal" href="_modules/dio.html#repr_in"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#dio.repr_in" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="function">
+<dt id="dio.repr_out">
+<tt class="descclassname">dio.</tt><tt class="descname">repr_out</tt><big>(</big><em>*args</em>, <em>**kwargs</em><big>)</big><a class="reference internal" href="_modules/dio.html#repr_out"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#dio.repr_out" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
 
 <dl class="function">
 <dt id="dio.restart_on_error">
@@ -263,15 +288,30 @@ lower line) than the &#64;processor decorator.</p>
 
 <dl class="function">
 <dt id="dio.source">
-<tt class="descclassname">dio.</tt><tt class="descname">source</tt><big>(</big><em>iterable</em>, <em>out=None</em>, <em>err=None</em><big>)</big><a class="reference internal" href="_modules/dio.html#source"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#dio.source" title="Permalink to this definition">¶</a></dt>
+<tt class="descclassname">dio.</tt><tt class="descname">source</tt><big>(</big><em>*args</em>, <em>**kwargs</em><big>)</big><a class="reference internal" href="_modules/dio.html#source"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#dio.source" title="Permalink to this definition">¶</a></dt>
 <dd><p>Turn any iterable into a source to start a processing pipeline.</p>
 </dd></dl>
 
 <dl class="function">
-<dt id="dio.uniq">
-<tt class="descclassname">dio.</tt><tt class="descname">uniq</tt><big>(</big><em>*args</em>, <em>**kwargs</em><big>)</big><a class="reference internal" href="_modules/dio.html#uniq"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#dio.uniq" title="Permalink to this definition">¶</a></dt>
-<dd><p>The dio equivalent of coreutils&#8217; uniq.</p>
+<dt id="dio.strip">
+<tt class="descclassname">dio.</tt><tt class="descname">strip</tt><big>(</big><em>*args</em>, <em>**kwargs</em><big>)</big><a class="reference internal" href="_modules/dio.html#strip"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#dio.strip" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="function">
+<dt id="dio.sum_">
+<tt class="descclassname">dio.</tt><tt class="descname">sum_</tt><big>(</big><em>*args</em>, <em>**kwargs</em><big>)</big><a class="reference internal" href="_modules/dio.html#sum_"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#dio.sum_" title="Permalink to this definition">¶</a></dt>
+<dd><p>Sum values for each key.</p>
 </dd></dl>
+
+<dl class="function">
+<dt id="dio.suppress_epipe">
+<tt class="descclassname">dio.</tt><tt class="descname">suppress_epipe</tt><big>(</big><em>f</em><big>)</big><a class="reference internal" href="_modules/dio.html#suppress_epipe"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#dio.suppress_epipe" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="function">
+<dt id="dio.tidy">
+<tt class="descclassname">dio.</tt><tt class="descname">tidy</tt><big>(</big><em>*args</em>, <em>**kwargs</em><big>)</big><a class="reference internal" href="_modules/dio.html#tidy"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#dio.tidy" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
 
 </div>
 </div>
